@@ -2,6 +2,9 @@ import js from '@eslint/js';
 import tsParser from '@typescript-eslint/parser';
 import tsPlugin from '@typescript-eslint/eslint-plugin';
 import customLiterals from './no-literal-string.js';
+import noRawDb from './no-raw-db.js';
+
+const peera = { rules: { ...customLiterals.rules, 'no-raw-db': noRawDb } };
 
 export default [
   {
@@ -24,7 +27,7 @@ export default [
       },
       globals: { console: 'readonly', process: 'readonly', Buffer: 'readonly' },
     },
-    plugins: { '@typescript-eslint': tsPlugin, '@peera': customLiterals },
+    plugins: { '@typescript-eslint': tsPlugin, '@peera': peera },
     rules: {
       ...tsPlugin.configs.recommended.rules,
       '@typescript-eslint/no-unused-vars': [
@@ -41,5 +44,15 @@ export default [
   {
     files: ['apps/**/*.{jsx,tsx}'],
     rules: { '@peera/no-literal-string': 'error' },
+  },
+  {
+    // App code queries tenant tables through withTenant(); schema, seed, clone, scripts and tests may go raw.
+    files: ['apps/**/*.{ts,tsx}'],
+    ignores: [
+      'apps/*/src/db/**',
+      'apps/*/scripts/**',
+      'apps/**/*.test.{ts,tsx}',
+    ],
+    rules: { '@peera/no-raw-db': 'error' },
   },
 ];

@@ -3,7 +3,7 @@ import { defineEnv } from './env';
 import { z } from 'zod';
 
 const testSchema = z.object({
-  SERVICE_URL: z.string().url(),
+  SERVICE_URL: z.url(),
   API_TOKEN: z.string().min(1),
 });
 
