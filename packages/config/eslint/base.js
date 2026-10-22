@@ -34,6 +34,11 @@ export default [
     },
   },
   {
+    // TypeScript already reports undefined names, and no-undef can't see DOM or React types.
+    files: ['**/*.{ts,tsx}'],
+    rules: { 'no-undef': 'off' },
+  },
+  {
     files: ['apps/**/*.{jsx,tsx}'],
     rules: { '@peera/no-literal-string': 'error' },
   },
