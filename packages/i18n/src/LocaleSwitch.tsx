@@ -30,7 +30,9 @@ export function LocaleSwitch({ className }: LocaleSwitchProps) {
 
   return (
     <div
-      className={className}
+      className={['inline-flex shrink-0 items-center', className]
+        .filter(Boolean)
+        .join(' ')}
       role="group"
       aria-label={currentLocale === 'th' ? 'เลือกภาษา' : 'Choose language'}
     >

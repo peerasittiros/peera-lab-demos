@@ -194,8 +194,10 @@ export function DemoBar({
         className,
       )}
     >
-      <span className="truncate font-medium">{productName}</span>
-      <Badge locale={locale}>{strings.sampleData}</Badge>
+      <span className="min-w-0 truncate font-medium">{productName}</span>
+      <Badge locale={locale} className="shrink-0 whitespace-nowrap">
+        {strings.sampleData}
+      </Badge>
 
       <div className="ml-auto hidden items-center gap-1 md:flex">
         <DropdownMenu>

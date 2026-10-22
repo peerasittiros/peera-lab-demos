@@ -22,13 +22,11 @@ export async function notify(
     .insert(mockMessage)
     .values({ tenantId, channel, payload: message })
     .returning();
-  await db
-    .insert(event)
-    .values({
-      tenantId,
-      kind: 'mock_message',
-      payload: { id: row!.id, channel },
-    });
+  await db.insert(event).values({
+    tenantId,
+    kind: 'mock_message',
+    payload: { id: row!.id, channel },
+  });
   return row!;
 }
 

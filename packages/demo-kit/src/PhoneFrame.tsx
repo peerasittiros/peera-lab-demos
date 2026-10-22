@@ -38,7 +38,8 @@ export function PhoneFrame({
       ref={outer}
       role="group"
       aria-label={label}
-      className={cn('mx-auto w-full max-w-[390px]', className)}
+      // overflow-hidden: a transform doesn't shrink the layout box, so the unscaled 390px would widen the page.
+      className={cn('mx-auto w-full max-w-[390px] overflow-hidden', className)}
       style={{ height: HEIGHT * scale }}
     >
       <div
