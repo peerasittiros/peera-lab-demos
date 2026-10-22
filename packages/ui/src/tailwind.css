@@ -1,0 +1,88 @@
+@import './tokens.css';
+@import './demo-tokens.css';
+
+/* Tailwind v4 theme bridge. The design-token declarations stay authoritative. */
+@theme inline {
+  --color-surface: var(--surface);
+  --color-surface-raised: var(--surface-raised);
+  --color-surface-sunken: var(--surface-sunken);
+  --color-line: var(--line);
+  --color-line-strong: var(--line-strong);
+  --color-ink: var(--ink);
+  --color-ink-muted: var(--ink-muted);
+  --color-ink-faint: var(--ink-faint);
+  --color-accent: var(--accent);
+  --color-on-accent: var(--on-accent);
+  --color-accent-soft: var(--accent-soft);
+  --color-accent-ink: var(--accent-ink);
+  --color-blueprint: var(--blueprint);
+  --color-blueprint-soft: var(--blueprint-soft);
+  --color-status-prototype: var(--status-prototype);
+  --color-status-prototype-soft: var(--status-prototype-soft);
+  --color-status-demo: var(--status-demo);
+  --color-status-demo-soft: var(--status-demo-soft);
+  --color-status-live: var(--status-live);
+  --color-status-live-soft: var(--status-live-soft);
+  --color-inverse-surface: var(--inverse-surface);
+  --color-inverse-ink: var(--inverse-ink);
+  --color-inverse-ink-muted: var(--inverse-ink-muted);
+  --color-inverse-accent: var(--inverse-accent);
+  --color-on-inverse-accent: var(--on-inverse-accent);
+  --color-link: var(--link);
+  --color-focus-ring: var(--focus-ring);
+  --color-product-accent: var(--product-accent);
+  --color-product-on-accent: var(--product-on-accent);
+  --color-product-accent-soft: var(--product-accent-soft);
+  --color-success: var(--success);
+  --color-success-soft: var(--success-soft);
+  --color-warning: var(--warning);
+  --color-warning-soft: var(--warning-soft);
+  --color-danger: var(--danger);
+  --color-danger-soft: var(--danger-soft);
+  --color-info: var(--info);
+  --color-info-soft: var(--info-soft);
+
+  --font-display: var(--font-display);
+  --font-display-th: var(--font-display-th);
+  --font-sans: var(--font-sans);
+  --font-mono: var(--font-mono);
+
+  --radius-xs: var(--radius-xs);
+  --radius-sm: var(--radius-sm);
+  --radius-md: var(--radius-md);
+  --radius-lg: var(--radius-lg);
+  --radius-full: var(--radius-full);
+  --shadow-sm: var(--shadow-sm);
+  --shadow-lift: var(--shadow-lift);
+  --ease-out: var(--ease-out);
+  --ease-in-out: var(--ease-in-out);
+  --container-max: var(--container-max);
+  --container-measure-en: var(--measure-en);
+  --container-measure-th: var(--measure-th);
+  --breakpoint-sm: 640px;
+  --breakpoint-md: 768px;
+  --breakpoint-lg: 1024px;
+  --breakpoint-xl: 1280px;
+}
+
+:root {
+  --font-display:
+    var(--nf-funnel-display), var(--nf-anuphan), 'Helvetica Neue', Arial,
+    sans-serif;
+  --font-display-th:
+    var(--nf-anuphan), var(--nf-funnel-display), 'Noto Sans Thai', sans-serif;
+  --font-sans:
+    var(--nf-plex-sans-thai), 'Noto Sans Thai', 'Helvetica Neue', Arial,
+    sans-serif;
+  --font-mono:
+    var(--nf-plex-mono), var(--nf-plex-sans-thai), ui-monospace, Menlo,
+    monospace;
+}
+
+html {
+  color-scheme: light;
+}
+
+html[data-theme='dark'] {
+  color-scheme: dark;
+}

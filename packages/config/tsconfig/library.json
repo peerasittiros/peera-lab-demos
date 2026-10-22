@@ -1,0 +1,11 @@
+{
+  "extends": "./base.json",
+  "compilerOptions": {
+    "declaration": true,
+    "declarationMap": true,
+    "noEmit": true,
+    "types": ["node"]
+  },
+  "include": ["../**/*.ts"],
+  "exclude": ["../**/*.test.ts", "../**/*.int.test.ts", "../**/node_modules"]
+}
