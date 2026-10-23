@@ -38,6 +38,22 @@ jobs:
 
   e2e:
     runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_PASSWORD: dev
+          POSTGRES_DB: demos
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U postgres"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+    env:
+      # Stockline's e2e server migrates and seeds this database before it starts (playwright.config.ts).
+      DATABASE_URL: postgres://postgres:dev@localhost:5432/demos
     steps:
       - uses: actions/checkout@v4
       - uses: pnpm/action-setup@v4
@@ -50,8 +66,11 @@ jobs:
       - run: pnpm install --frozen-lockfile
       - run: pnpm --filter kit-preview exec playwright install --with-deps chromium webkit
       - run: pnpm --filter kit-preview e2e
+      - run: pnpm --filter stockline e2e
       - uses: actions/upload-artifact@v4
         if: failure()
         with:
           name: playwright-results
-          path: apps/kit-preview/test-results
+          path: |
+            apps/kit-preview/test-results
+            apps/stockline/test-results

@@ -2,7 +2,7 @@
 import { signSid } from '@peera/db/session';
 import { NextRequest } from 'next/server';
 import { describe, expect, it } from 'vitest';
-import { createDemoProxy, readDemoHeaders } from './proxy';
+import { createDemoProxy, readDemoHeaders, readDemoVariant } from './proxy';
 
 const secret = 'test-secret-that-is-at-least-32-characters';
 const proxy = createDemoProxy({ secret: () => secret });
@@ -43,6 +43,28 @@ describe('createDemoProxy', () => {
     expect(response.headers.get('x-middleware-request-x-demo-sid')).toBe(sid);
     expect(response.headers.get('x-middleware-request-x-demo-sid-via')).toBe(
       'cookie',
+    );
+  });
+});
+
+describe('variant', () => {
+  it('passes a well-formed ?variant on and drops a malformed or forged one', async () => {
+    const withVariant = await proxy(
+      new NextRequest('https://demo.test/th?variant=cafe'),
+    );
+    expect(withVariant.headers.get('x-middleware-request-x-demo-variant')).toBe(
+      'cafe',
+    );
+    const forged = await proxy(
+      new NextRequest('https://demo.test/th?variant=%3Cscript%3E', {
+        headers: { 'x-demo-variant': 'hardware' },
+      }),
+    );
+    expect(
+      forged.headers.get('x-middleware-request-x-demo-variant'),
+    ).toBeNull();
+    expect(readDemoVariant(new Headers({ 'x-demo-variant': 'cafe' }))).toBe(
+      'cafe',
     );
   });
 });

@@ -20,11 +20,16 @@ export function withTenant(db: Queryable, tenantId: string) {
     tenantId,
     /** `tenant_id = $tenantId AND …conditions`, for queries built by hand. */
     where: scope,
+    /** Rows keep the table's types (`T['$inferSelect']`); chain `.orderBy()`, `.limit()`, `.for('update')`. */
     select<T extends TenantTable>(table: T, where?: SQL) {
-      return db
-        .select()
-        .from(table as PgTable)
-        .where(scope(table, where));
+      return (
+        db
+          .select()
+          // The explicit type argument keeps T (typed rows); `never` passes Drizzle's conditional parameter check, which
+          // can't be decided for a generic table.
+          .from<T & PgTable>(table as never)
+          .where(scope(table, where))
+      );
     },
     insert<T extends TenantTable>(
       table: T,

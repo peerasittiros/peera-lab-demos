@@ -1,4 +1,5 @@
 import { migrate } from 'drizzle-orm/node-postgres/migrator';
+import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import type { Db } from './client';
 
@@ -12,7 +13,9 @@ export type MigrationSet = {
 /** The platform tables' migrations. Apps run this set first, then their own. */
 export const platformMigrations: MigrationSet = {
   name: 'platform',
-  folder: fileURLToPath(new URL('../drizzle', import.meta.url)),
+  // A path join, not `new URL('../drizzle', import.meta.url)`: bundlers (Turbopack) treat that form as an asset
+  // import and fail on a folder when an app imports this package.
+  folder: join(dirname(fileURLToPath(import.meta.url)), '..', 'drizzle'),
 };
 
 export async function runMigrations(

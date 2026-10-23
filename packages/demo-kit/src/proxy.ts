@@ -9,12 +9,14 @@ import { NextResponse, type NextRequest } from 'next/server';
 const SID = 'x-demo-sid';
 const TOKEN = 'x-demo-sid-token';
 const VIA = 'x-demo-sid-via';
+const VARIANT = 'x-demo-variant';
 
 /**
  * Each app's `proxy.ts`: `export default createDemoProxy({ secret: () => env.DEMO_SESSION_SECRET })`.
  * 1. URLs without a locale redirect to `/{locale}/…` (query, incl. `?sid`, kept).
  * 2. The visitor's session is read from the cookie or `?sid`, or created; the cookie is (re)set when needed.
- * 3. The session reaches Server Components and Server Actions as request headers (`readDemoHeaders`). Incoming
+ * 3. `?variant=` (which seed shop a new visitor gets, e.g. `cafe`) travels on as a header too.
+ * 4. The session reaches Server Components and Server Actions as request headers (`readDemoHeaders`). Incoming
  *    headers with those names are always overwritten, so a visitor can't forge them.
  */
 export function createDemoProxy({
@@ -39,6 +41,10 @@ export function createDemoProxy({
     headers.set(SID, session.sid);
     headers.set(TOKEN, session.token);
     headers.set(VIA, session.via);
+    const variant = request.nextUrl.searchParams.get('variant');
+    if (variant && /^[a-z0-9-]{1,32}$/.test(variant))
+      headers.set(VARIANT, variant);
+    else headers.delete(VARIANT);
     const response = NextResponse.next({ request: { headers } });
     if (session.setCookie)
       response.headers.append('set-cookie', session.setCookie);
@@ -52,4 +58,9 @@ export function readDemoHeaders(headers: Headers): DemoSessionRef | null {
   const token = headers.get(TOKEN);
   const via = headers.get(VIA) as SessionVia | null;
   return sid && token && via ? { sid, token, via } : null;
+}
+
+/** The `?variant=` of this request (used only when the visitor's tenant is created), or null. */
+export function readDemoVariant(headers: Headers): string | null {
+  return headers.get(VARIANT);
 }

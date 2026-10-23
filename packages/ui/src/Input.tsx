@@ -1,6 +1,6 @@
 'use client';
 
-import type { InputHTMLAttributes, TextareaHTMLAttributes } from 'react';
+import type { InputHTMLAttributes, Ref, TextareaHTMLAttributes } from 'react';
 import { cn, focusRing } from './cn';
 import { useFieldControl } from './Field';
 import { ts, type Locale } from './i18n';
@@ -15,6 +15,8 @@ const control = cn(
 export type InputProps = InputHTMLAttributes<HTMLInputElement> & {
   /** Falls back to the surrounding `Field`, then to English. */
   locale?: Locale;
+  /** React 19 passes refs as props; it lands on the <input>. */
+  ref?: Ref<HTMLInputElement>;
 };
 
 export function Input({ locale, className, ...rest }: InputProps) {
@@ -37,6 +39,7 @@ export function Input({ locale, className, ...rest }: InputProps) {
 export type TextareaProps = TextareaHTMLAttributes<HTMLTextAreaElement> & {
   /** Falls back to the surrounding `Field`, then to English. */
   locale?: Locale;
+  ref?: Ref<HTMLTextAreaElement>;
 };
 
 export function Textarea({
