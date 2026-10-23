@@ -3,7 +3,17 @@
   "tasks": {
     "build": {
       "dependsOn": ["^build"],
-      "outputs": [".next/**", "!.next/cache/**", "dist/**"]
+      "outputs": [".next/**", "!.next/cache/**", "dist/**"],
+      "env": [
+        "DATABASE_URL",
+        "DB_SCHEMA",
+        "DEMO_SESSION_SECRET",
+        "ALLOWED_FRAME_ANCESTORS",
+        "PEERA_LAB_URL",
+        "CRON_SECRET",
+        "UPSTASH_REDIS_REST_URL",
+        "UPSTASH_REDIS_REST_TOKEN"
+      ]
     },
     "dev": {
       "cache": false,
