@@ -23,7 +23,8 @@ async function openRound(page: Page) {
 }
 
 async function expectProgress(page: Page, read: number, total: number) {
-  await expect(page.locator('p').filter({ hasText: `${read}/${total}` }).first()).toBeVisible();
+  // Each save is a server round-trip; WebKit under load can take longer than the default 15 s to show the last one.
+  await expect(page.locator('p').filter({ hasText: `${read}/${total}` }).first()).toBeVisible({ timeout: 30_000 });
 }
 
 /** The "read" number in the sticky progress line, e.g. 24 from "จดแล้ว 24/30 ห้อง". */
@@ -38,6 +39,9 @@ async function typeAndLeave(page: Page, id: string, value: number | string) {
   await input.fill(String(value));
   await input.press('Enter');
 }
+
+// The tests share one database and one period, so they run in order: a parallel save would change another test's counts.
+test.describe.configure({ mode: 'serial' });
 
 test.describe('meter round', () => {
   test('reads every room of the first building on a 390px phone, one card per room', async ({ page }) => {
@@ -159,6 +163,8 @@ test.describe('meter round', () => {
 
     await context.setOffline(false);
     await expect(page.getByText('รอซิงก์')).toHaveCount(0, { timeout: 30_000 });
+    // The sync can still be navigating; let it settle before the round is opened again.
+    await page.waitForLoadState('networkidle');
 
     await openRound(page);
     await expect(inputs(page).nth(0)).toHaveValue(String(a!.previous + 25));

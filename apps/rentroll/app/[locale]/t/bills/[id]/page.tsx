@@ -1,9 +1,9 @@
 import { PageHeader } from '@/src/components/PageHeader';
-import { loadTenantInvoice, tenantContract } from '@/src/db/queries/tenant';
+import { loadInvoiceReceipts, loadTenantInvoice, tenantContract } from '@/src/db/queries/tenant';
 import { bangkokDate } from '@/src/domain/dates';
 import { pageContext } from '@/src/server/page';
 import { formatMoney } from '@peera/i18n';
-import { cn, focusRing } from '@peera/ui';
+import { cn, focusRing, ts } from '@peera/ui';
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
 
@@ -15,6 +15,7 @@ export default async function Page({ params }: { params: Promise<{ locale: strin
   if (!current) notFound();
   const found = await loadTenantInvoice(db, tenantId, current.contractId, id);
   if (!found) notFound();
+  const receipts = await loadInvoiceReceipts(db, tenantId, found.invoice.id);
   const p = m.tenant.billDetail;
   return (
     <>
@@ -37,6 +38,21 @@ export default async function Page({ params }: { params: Promise<{ locale: strin
         <span className="text-ink-muted">{m.payments.pay.owed} </span>
         <span className="tabular-nums">{formatMoney(found.invoice.totalSatang, locale)}</span>
       </p>
+      {receipts.length > 0 ? (
+        <section className="mt-6 flex flex-col gap-2">
+          <h2 className={cn(ts('title', locale), 'm-0')}>{p.receipts}</h2>
+          <ul className="flex flex-col gap-2">
+            {receipts.map((r) => (
+              <li key={r.paymentId}>
+                <Link href={`/${locale}/t/receipts/${r.paymentId}`} className={cn('inline-flex min-h-[44px] flex-wrap items-center gap-x-3 text-ink underline-offset-4 hover:underline', focusRing)}>
+                  <span className="tabular-nums">{r.receiptNumber}</span>
+                  <span className="tabular-nums">{formatMoney(r.amountSatang, locale)}</span>
+                </Link>
+              </li>
+            ))}
+          </ul>
+        </section>
+      ) : null}
       <Link
         href={`/i/${found.invoice.publicToken}?lang=${locale}`}
         className={cn('mt-4 inline-flex min-h-[44px] items-center text-ink underline-offset-4 hover:underline', focusRing)}

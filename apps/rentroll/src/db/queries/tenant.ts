@@ -4,6 +4,7 @@ import { isLiveContract } from '../../domain/property';
 import {
   announcement,
   payment,
+  paymentAllocation,
   contract,
   contractRenter,
   invoice,
@@ -125,6 +126,34 @@ export async function loadTenantInvoice(db: Queryable, tenantId: string, contrac
   if (!found || found.status === 'draft') return null;
   const lines = await scope.select(invoiceLine, eq(invoiceLine.invoiceId, found.id));
   return { invoice: found, lines };
+}
+
+/** The approved receipts that paid this invoice, newest first. */
+export async function loadInvoiceReceipts(db: Queryable, tenantId: string, invoiceId: string) {
+  const scope = withTenant(db, tenantId);
+  const allocations = await scope.select(paymentAllocation, eq(paymentAllocation.invoiceId, invoiceId));
+  if (allocations.length === 0) return [];
+  const payments = await scope.select(payment, inArray(payment.id, allocations.map((a) => a.paymentId)));
+  return payments
+    .filter((p) => p.status === 'approved' && p.receiptNumber)
+    .map((p) => ({ paymentId: p.id, receiptNumber: p.receiptNumber!, amountSatang: p.amountSatang, paidAt: p.paidAt }))
+    .sort((a, b) => b.paidAt.getTime() - a.paidAt.getTime());
+}
+
+/** One approved payment on this contract, with the invoices it paid. Null for a pending, rejected or foreign payment. */
+export async function loadReceipt(db: Queryable, tenantId: string, contractId: string, paymentId: string) {
+  const scope = withTenant(db, tenantId);
+  const [found] = await scope.select(payment, and(eq(payment.id, paymentId), eq(payment.contractId, contractId)));
+  if (!found || found.status !== 'approved' || !found.receiptNumber) return null;
+  const allocations = await scope.select(paymentAllocation, eq(paymentAllocation.paymentId, found.id));
+  const invoices = await scope.select(invoice, eq(invoice.contractId, contractId));
+  const byId = new Map(invoices.map((i) => [i.id, i]));
+  const paid = allocations.map((a) => ({
+    invoiceNumber: byId.get(a.invoiceId)?.number ?? '—',
+    period: byId.get(a.invoiceId)?.period ?? null,
+    amountSatang: a.amountSatang,
+  }));
+  return { payment: found, paid };
 }
 
 /** The owner's side of the split: slips waiting, open repairs in the building, and the newest tenant events. */
