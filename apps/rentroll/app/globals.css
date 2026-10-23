@@ -1,0 +1,14 @@
+@import 'tailwindcss';
+@import '@peera/ui/tailwind.css';
+@import '@peera/demo-kit/demo-kit.css';
+
+/* The shared packages' classes live outside this app. */
+@source '../../../packages/ui/src';
+@source '../../../packages/i18n/src';
+@source '../../../packages/demo-kit/src';
+
+body {
+  min-height: 100dvh;
+  background: var(--surface);
+  color: var(--ink);
+}
