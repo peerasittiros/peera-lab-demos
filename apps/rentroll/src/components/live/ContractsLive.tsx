@@ -356,6 +356,7 @@ export function MoveInLive({ locale }: { locale: Locale }) {
 function MoveInBody({ locale }: { locale: Locale }) {
   const { m } = translator(locale);
   const p = m.contracts.moveIn;
+  const w = m.ownerEdits;
   const vacant = useStore(vacantRoomsView);
   const today = useStore(todayOf);
   const role = useRole();
@@ -372,6 +373,7 @@ function MoveInBody({ locale }: { locale: Locale }) {
   const [checks, setChecks] = useState<Record<string, 'ok' | 'damaged' | null>>(
     {},
   );
+  const [step, setStep] = useState(0);
   const [done, setDone] = useState<string | null>(null);
 
   if (vacant.length === 0)
@@ -390,10 +392,29 @@ function MoveInBody({ locale }: { locale: Locale }) {
         advanceMonths,
       })
     : null;
+  const stepLabels = [
+    w.wizardRoom,
+    w.wizardTerms,
+    w.wizardChecklist,
+    w.wizardReview,
+  ];
+  const last = step === stepLabels.length - 1;
+  // Each step has to be complete before the owner moves on; the review step is always complete.
+  const stepValid = [
+    Boolean(room) && name.trim() !== '',
+    Boolean(start) && elec.trim() !== '' && water.trim() !== '',
+    true,
+    true,
+  ];
+  const counter = `${step + 1} / ${stepLabels.length}`;
 
   const submit = (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
-    if (!room) return;
+    if (!last) {
+      if (stepValid[step]) setStep(step + 1);
+      return;
+    }
+    if (!room || !stepValid.every(Boolean)) return;
     const result = actMoveIn(
       { store: getStore(), role, now: () => new Date() },
       {
@@ -436,110 +457,189 @@ function MoveInBody({ locale }: { locale: Locale }) {
           {total ? formatMoney(total.total, locale) : m.contracts.blank}
         </p>
       </div>
-      <div className="grid gap-4 md:grid-cols-2">
-        <Field label={p.room} locale={locale} required>
-          <Select
-            locale={locale}
-            value={room?.id ?? ''}
-            onValueChange={setRoomId}
-            options={vacant.map((r) => ({ value: r.id, label: r.number }))}
-          />
-        </Field>
-        <Field label={p.renterName} locale={locale} required>
-          <Input
-            value={name}
-            onChange={(e) => setName(e.target.value)}
-            required
-          />
-        </Field>
-        <Field label={p.renterPhone} locale={locale}>
-          <Input value={phone} onChange={(e) => setPhone(e.target.value)} />
-        </Field>
-        <Field label={p.startDate} locale={locale} required>
-          <Input
-            type="date"
-            value={start}
-            onChange={(e) => setStartDate(e.target.value)}
-            required
-          />
-        </Field>
-        <Field label={p.monthlyRent} locale={locale} required>
-          <Input
-            inputMode="decimal"
-            value={(rentSatang / 100).toFixed(2)}
-            onChange={(e) => setRent(e.target.value)}
-          />
-        </Field>
-        <Field label={p.deposit} locale={locale} required>
-          <Input
-            inputMode="decimal"
-            value={(depositSatang / 100).toFixed(2)}
-            onChange={(e) => setDeposit(e.target.value)}
-          />
-        </Field>
-        <Field label={p.advanceMonths} locale={locale} required>
-          <Input
-            inputMode="numeric"
-            value={String(advanceMonths)}
-            onChange={(e) => setAdvance(e.target.value)}
-          />
-        </Field>
-        <Field label={p.elecReading} locale={locale} required>
-          <Input
-            inputMode="numeric"
-            value={elec}
-            onChange={(e) => setElec(e.target.value)}
-            required
-          />
-        </Field>
-        <Field label={p.waterReading} locale={locale} required>
-          <Input
-            inputMode="numeric"
-            value={water}
-            onChange={(e) => setWater(e.target.value)}
-            required
-          />
-        </Field>
-      </div>
-      <fieldset className="flex flex-col gap-2">
-        <legend className="mb-2 text-ink">{p.checklist}</legend>
-        <p className="text-ink-muted">{p.checklistIntro}</p>
-        {CHECKLIST_KEYS.map((key) => (
-          <label
-            key={key}
-            className="flex min-h-11 flex-wrap items-center justify-between gap-3 text-ink"
-          >
-            <span>
-              {locale === 'th'
-                ? CHECKLIST_LABELS[key].th
-                : CHECKLIST_LABELS[key].en}
-            </span>
-            <select
-              value={checks[key] ?? ''}
-              onChange={(e) =>
-                setChecks((prev) => ({
-                  ...prev,
-                  [key]: (e.target.value || null) as 'ok' | 'damaged' | null,
-                }))
-              }
-              className="min-h-11 rounded-sm border border-line-strong bg-surface-raised px-3 text-ink"
+      <div className="flex flex-col gap-3">
+        <ol aria-label={counter} className="flex flex-wrap gap-2">
+          {stepLabels.map((text, i) => (
+            <li
+              key={text}
+              aria-current={i === step ? 'step' : undefined}
+              className={cn(
+                'rounded-sm border px-3 py-2',
+                i === step
+                  ? 'border-ink bg-surface-sunken text-ink'
+                  : 'border-line bg-surface-raised text-ink-muted',
+              )}
             >
-              <option value="">{m.contracts.checklist.none}</option>
-              <option value="ok">{m.contracts.checklist.ok}</option>
-              <option value="damaged">{m.contracts.checklist.damaged}</option>
-            </select>
-          </label>
-        ))}
-      </fieldset>
-      <div>
-        <Button
-          type="submit"
-          variant="primary"
-          locale={locale}
-          disabled={!name.trim()}
-        >
-          {p.submit}
-        </Button>
+              {text}
+            </li>
+          ))}
+        </ol>
+        <p className="tabular-nums text-ink-muted">{counter}</p>
+      </div>
+
+      {step === 0 ? (
+        <div className="grid gap-4 md:grid-cols-2">
+          <Field label={p.room} locale={locale} required>
+            <Select
+              locale={locale}
+              value={room?.id ?? ''}
+              onValueChange={setRoomId}
+              options={vacant.map((r) => ({ value: r.id, label: r.number }))}
+            />
+          </Field>
+          <Field label={p.renterName} locale={locale} required>
+            <Input
+              value={name}
+              onChange={(e) => setName(e.target.value)}
+              required
+            />
+          </Field>
+          <Field label={p.renterPhone} locale={locale}>
+            <Input value={phone} onChange={(e) => setPhone(e.target.value)} />
+          </Field>
+        </div>
+      ) : null}
+
+      {step === 1 ? (
+        <div className="grid gap-4 md:grid-cols-2">
+          <Field label={p.startDate} locale={locale} required>
+            <Input
+              type="date"
+              value={start}
+              onChange={(e) => setStartDate(e.target.value)}
+              required
+            />
+          </Field>
+          <Field label={p.monthlyRent} locale={locale} required>
+            <Input
+              inputMode="decimal"
+              value={(rentSatang / 100).toFixed(2)}
+              onChange={(e) => setRent(e.target.value)}
+            />
+          </Field>
+          <Field label={p.deposit} locale={locale} required>
+            <Input
+              inputMode="decimal"
+              value={(depositSatang / 100).toFixed(2)}
+              onChange={(e) => setDeposit(e.target.value)}
+            />
+          </Field>
+          <Field label={p.advanceMonths} locale={locale} required>
+            <Input
+              inputMode="numeric"
+              value={String(advanceMonths)}
+              onChange={(e) => setAdvance(e.target.value)}
+            />
+          </Field>
+          <Field label={p.elecReading} locale={locale} required>
+            <Input
+              inputMode="numeric"
+              value={elec}
+              onChange={(e) => setElec(e.target.value)}
+              required
+            />
+          </Field>
+          <Field label={p.waterReading} locale={locale} required>
+            <Input
+              inputMode="numeric"
+              value={water}
+              onChange={(e) => setWater(e.target.value)}
+              required
+            />
+          </Field>
+        </div>
+      ) : null}
+
+      {step === 2 ? (
+        <fieldset className="flex flex-col gap-2">
+          <legend className="mb-2 text-ink">{p.checklist}</legend>
+          <p className="text-ink-muted">{p.checklistIntro}</p>
+          {CHECKLIST_KEYS.map((key) => (
+            <label
+              key={key}
+              className="flex min-h-11 flex-wrap items-center justify-between gap-3 text-ink"
+            >
+              <span>
+                {locale === 'th'
+                  ? CHECKLIST_LABELS[key].th
+                  : CHECKLIST_LABELS[key].en}
+              </span>
+              <select
+                value={checks[key] ?? ''}
+                onChange={(e) =>
+                  setChecks((prev) => ({
+                    ...prev,
+                    [key]: (e.target.value || null) as 'ok' | 'damaged' | null,
+                  }))
+                }
+                className="min-h-11 rounded-sm border border-line-strong bg-surface-raised px-3 text-ink"
+              >
+                <option value="">{m.contracts.checklist.none}</option>
+                <option value="ok">{m.contracts.checklist.ok}</option>
+                <option value="damaged">{m.contracts.checklist.damaged}</option>
+              </select>
+            </label>
+          ))}
+        </fieldset>
+      ) : null}
+
+      {last ? (
+        <dl className="grid grid-cols-2 gap-4 rounded-sm border border-line bg-surface-raised p-4">
+          {(
+            [
+              [p.room, room?.number ?? m.contracts.blank],
+              [p.renterName, name.trim() || m.contracts.blank],
+              [p.startDate, start || m.contracts.blank],
+              [p.monthlyRent, formatMoney(rentSatang, locale)],
+              [p.deposit, formatMoney(depositSatang, locale)],
+              [p.advanceMonths, String(advanceMonths)],
+              [
+                m.ownerLive.moveInTotal,
+                total ? formatMoney(total.total, locale) : m.contracts.blank,
+              ],
+            ] as const
+          ).map(([label, value]) => (
+            <div key={label} className="flex flex-col gap-1">
+              <dt className="text-ink-muted">{label}</dt>
+              <dd className="m-0 tabular-nums text-ink">{value}</dd>
+            </div>
+          ))}
+        </dl>
+      ) : null}
+
+      <div className="flex flex-wrap items-center justify-between gap-3">
+        {step > 0 ? (
+          <Button
+            type="button"
+            variant="ghost"
+            locale={locale}
+            onClick={() => setStep(step - 1)}
+          >
+            {w.wizardBack}
+          </Button>
+        ) : (
+          <span />
+        )}
+        {last ? (
+          <Button
+            type="submit"
+            variant="primary"
+            locale={locale}
+            disabled={!stepValid.every(Boolean)}
+          >
+            {p.submit}
+          </Button>
+        ) : (
+          <Button
+            type="button"
+            variant="primary"
+            locale={locale}
+            disabled={!stepValid[step]}
+            onClick={() => setStep(step + 1)}
+          >
+            {w.wizardNext}
+          </Button>
+        )}
       </div>
     </form>
   );

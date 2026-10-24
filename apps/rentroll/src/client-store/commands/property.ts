@@ -390,3 +390,48 @@ export function actAddRatePlan(
     ? { ok: true, value: { planId } }
     : fail('property.errors.saveFailed');
 }
+
+const roomInput = z.object({
+  roomId: z.uuid(),
+  number: z.string().trim().min(1).max(12),
+  floor: z.number().int().min(-5).max(200),
+  roomTypeId: z.uuid(),
+  sizeSqm: z.number().positive().max(10000).nullable(),
+  elecMeterDigits: z.number().int().min(3).max(8),
+  waterMeterDigits: z.number().int().min(3).max(8),
+});
+
+/** Edits a room (SPEC §4 O3). A room number is unique within its building, and the type must belong to that building. */
+export function actUpdateRoom(
+  ctx: CommandContext,
+  input: z.input<typeof roomInput>,
+): CommandResult<{ roomId: string }> {
+  if (!isOwner(ctx)) return fail('errors.forbidden');
+  const parsed = roomInput.safeParse(input);
+  if (!parsed.success) return fail('property.errors.invalid');
+  const data = ctx.store.getState().data;
+  const room = data.room.find((r) => r.id === parsed.data.roomId);
+  if (!room) return fail('property.errors.notFound');
+  const type = data.room_type.find((t) => t.id === parsed.data.roomTypeId);
+  if (!type || type.buildingId !== room.buildingId)
+    return fail('property.errors.invalid');
+  if (
+    data.room.some(
+      (r) =>
+        r.id !== room.id &&
+        r.buildingId === room.buildingId &&
+        r.number === parsed.data.number,
+    )
+  )
+    return fail('property.errors.roomDuplicate');
+  const ok = ctx.store.dispatch({
+    id: newId(),
+    at: ctx.now().toISOString(),
+    role: ctx.role,
+    kind: 'room.update',
+    payload: parsed.data,
+  });
+  return ok
+    ? { ok: true, value: { roomId: room.id } }
+    : fail('property.errors.saveFailed');
+}

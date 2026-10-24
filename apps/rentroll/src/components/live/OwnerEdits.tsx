@@ -14,11 +14,11 @@ import type { Row, Role } from '@/src/client-store/schema';
 import { translator, type Messages } from '@/src/i18n';
 
 /** Baht typed in a form, as satang. Anything that isn't a number becomes 0; the command decides what is allowed. */
-const toSatang = (baht: string) => Math.round((Number(baht) || 0) * 100);
-const toBaht = (satang: number) => (satang / 100).toFixed(2);
+export const toSatang = (baht: string) => Math.round((Number(baht) || 0) * 100);
+export const toBaht = (satang: number) => (satang / 100).toFixed(2);
 
 /** The text for a command's error key, such as `property.errors.invalid`. Falls back to the key itself. */
-function messageFor(m: Messages, key: string): string {
+export function messageFor(m: Messages, key: string): string {
   const value = key
     .split('.')
     .reduce<unknown>(
@@ -31,7 +31,7 @@ function messageFor(m: Messages, key: string): string {
   return typeof value === 'string' ? value : key;
 }
 
-const commandContext = (role: Role) => ({
+export const commandContext = (role: Role) => ({
   store: getStore(),
   role,
   now: () => new Date(),

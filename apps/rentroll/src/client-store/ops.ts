@@ -337,7 +337,22 @@ export type Op =
   | ContractMoveOutOp
   | BuildingUpdateOp
   | RatePlanAddOp
-  | CreditNoteIssueOp;
+  | CreditNoteIssueOp
+  | RoomUpdateOp;
+
+/** Edits a room's number, floor, type, size and meter digit counts. The room keeps its building. */
+export type RoomUpdateOp = OpBase & {
+  kind: 'room.update';
+  payload: {
+    roomId: string;
+    number: string;
+    floor: number;
+    roomTypeId: string;
+    sizeSqm: number | null;
+    elecMeterDigits: number;
+    waterMeterDigits: number;
+  };
+};
 
 export type OpKind = Op['kind'];
 
@@ -445,6 +460,21 @@ export function canApply(data: Data, op: Op): boolean {
       );
     case 'room.maintenance':
       return Boolean(byId(data.room, op.payload.roomId));
+    case 'room.update': {
+      const room = byId(data.room, op.payload.roomId);
+      const type = byId(data.room_type, op.payload.roomTypeId);
+      return (
+        Boolean(room) &&
+        Boolean(type) &&
+        type!.buildingId === room!.buildingId &&
+        !data.room.some(
+          (r) =>
+            r.id !== op.payload.roomId &&
+            r.buildingId === room!.buildingId &&
+            r.number === op.payload.number,
+        )
+      );
+    }
     case 'contract.notice':
       return byId(data.contract, op.payload.contractId)?.status === 'active';
     case 'contract.movein': {
@@ -862,6 +892,17 @@ export function apply(data: Data, op: Op): Data {
       return patchRow(data, 'room', op.payload.roomId, {
         maintenance: op.payload.maintenance,
       });
+    case 'room.update': {
+      const p = op.payload;
+      return patchRow(data, 'room', p.roomId, {
+        number: p.number,
+        floor: p.floor,
+        roomTypeId: p.roomTypeId,
+        sizeSqm: p.sizeSqm,
+        elecMeterDigits: p.elecMeterDigits,
+        waterMeterDigits: p.waterMeterDigits,
+      });
+    }
 
     case 'contract.notice':
       return patchRow(data, 'contract', op.payload.contractId, {

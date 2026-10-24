@@ -21,6 +21,7 @@ import { PageHeader } from '@/src/components/PageHeader';
 import { ReadyGate } from './ReadyGate';
 import { Dot, KV } from './KV';
 import { BuildingEditForm, RatePlanForm } from './OwnerEdits';
+import { RoomEditForm } from './RoomEditForm';
 
 type Filter =
   | 'all'
@@ -208,6 +209,9 @@ function RoomDetailBody({
       >
         {p.back}
       </Link>
+      <div className="mb-6">
+        <RoomEditForm locale={locale} roomId={roomId} />
+      </div>
       <div className="grid gap-6 md:grid-cols-2">
         <section className="flex flex-col gap-3 rounded-sm border border-line bg-surface-raised p-4">
           <p className="text-ink">
