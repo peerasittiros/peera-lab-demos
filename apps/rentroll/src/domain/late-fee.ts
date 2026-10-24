@@ -19,7 +19,11 @@ export function daysLate(dueDate: string, asOf: Date): number {
   return Math.max(0, dayNumber(bangkokDate(asOf)) - dayNumber(dueDate));
 }
 
-export function lateFee(rule: LateFeeRule, dueDate: string, asOf: Date): Satang {
+export function lateFee(
+  rule: LateFeeRule,
+  dueDate: string,
+  asOf: Date,
+): Satang {
   const days = daysLate(dueDate, asOf);
   if (days === 0) return 0;
   const raw = rule.mode === 'per_day' ? rule.amount * days : rule.amount;

@@ -1,8 +1,26 @@
 /** Repair request choices, shared by the tenant form and the server (01 §3.1 D.15). Plain values, no server code. */
-export const REPAIR_CATEGORIES = ['electrical', 'plumbing', 'aircon', 'furniture', 'internet', 'other'] as const;
-export const PREFERRED_TIMES = ['morning', 'afternoon', 'evening', 'anytime'] as const;
+export const REPAIR_CATEGORIES = [
+  'electrical',
+  'plumbing',
+  'aircon',
+  'furniture',
+  'internet',
+  'other',
+] as const;
+export const PREFERRED_TIMES = [
+  'morning',
+  'afternoon',
+  'evening',
+  'anytime',
+] as const;
 
-export const REPAIR_STATUSES = ['new', 'scheduled', 'in_progress', 'done', 'cancelled'] as const;
+export const REPAIR_STATUSES = [
+  'new',
+  'scheduled',
+  'in_progress',
+  'done',
+  'cancelled',
+] as const;
 export type RepairStatus = (typeof REPAIR_STATUSES)[number];
 
 /**

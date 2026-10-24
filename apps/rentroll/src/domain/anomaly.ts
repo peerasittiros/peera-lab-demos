@@ -1,4 +1,5 @@
-export type ReadingAnomaly = 'lower_than_previous' | 'above_double_average' | 'below_fifth_of_average';
+export type ReadingAnomaly =
+  'lower_than_previous' | 'above_double_average' | 'below_fifth_of_average';
 
 /**
  * Flags a reading before billing (01 §3.1 C.8). `averageUnits` is the room's average over the last three months, or

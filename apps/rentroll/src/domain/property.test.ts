@@ -5,30 +5,66 @@ const today = '2026-10-23';
 
 describe('roomStatus', () => {
   it('is vacant with no contract', () => {
-    expect(roomStatus({ maintenance: false, contracts: [], today })).toBe('vacant');
+    expect(roomStatus({ maintenance: false, contracts: [], today })).toBe(
+      'vacant',
+    );
   });
 
   it('is occupied with a started active contract, and while on notice', () => {
-    const active = { status: 'active' as const, startDate: '2025-01-01', endDate: null };
-    const notice = { status: 'notice_given' as const, startDate: '2025-01-01', endDate: '2026-11-30' };
-    expect(roomStatus({ maintenance: false, contracts: [active], today })).toBe('occupied');
-    expect(roomStatus({ maintenance: false, contracts: [notice], today })).toBe('occupied');
+    const active = {
+      status: 'active' as const,
+      startDate: '2025-01-01',
+      endDate: null,
+    };
+    const notice = {
+      status: 'notice_given' as const,
+      startDate: '2025-01-01',
+      endDate: '2026-11-30',
+    };
+    expect(roomStatus({ maintenance: false, contracts: [active], today })).toBe(
+      'occupied',
+    );
+    expect(roomStatus({ maintenance: false, contracts: [notice], today })).toBe(
+      'occupied',
+    );
   });
 
   it('is reserved when the only live contract starts later', () => {
-    const future = { status: 'active' as const, startDate: '2026-11-15', endDate: null };
-    expect(roomStatus({ maintenance: false, contracts: [future], today })).toBe('reserved');
+    const future = {
+      status: 'active' as const,
+      startDate: '2026-11-15',
+      endDate: null,
+    };
+    expect(roomStatus({ maintenance: false, contracts: [future], today })).toBe(
+      'reserved',
+    );
   });
 
   it('ignores ended contracts and contracts that finished before today', () => {
-    const ended = { status: 'ended' as const, startDate: '2024-01-01', endDate: '2025-01-01' };
-    const finished = { status: 'active' as const, startDate: '2024-01-01', endDate: '2026-10-01' };
-    expect(roomStatus({ maintenance: false, contracts: [ended, finished], today })).toBe('vacant');
+    const ended = {
+      status: 'ended' as const,
+      startDate: '2024-01-01',
+      endDate: '2025-01-01',
+    };
+    const finished = {
+      status: 'active' as const,
+      startDate: '2024-01-01',
+      endDate: '2026-10-01',
+    };
+    expect(
+      roomStatus({ maintenance: false, contracts: [ended, finished], today }),
+    ).toBe('vacant');
   });
 
   it('maintenance overrides any contract', () => {
-    const active = { status: 'active' as const, startDate: '2025-01-01', endDate: null };
-    expect(roomStatus({ maintenance: true, contracts: [active], today })).toBe('maintenance');
+    const active = {
+      status: 'active' as const,
+      startDate: '2025-01-01',
+      endDate: null,
+    };
+    expect(roomStatus({ maintenance: true, contracts: [active], today })).toBe(
+      'maintenance',
+    );
   });
 });
 

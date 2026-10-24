@@ -3,7 +3,9 @@ const DAY_MS = 24 * 60 * 60 * 1000;
 
 /** The Asia/Bangkok calendar date (YYYY-MM-DD) of an instant. Bangkok has no DST, so a fixed offset is exact. */
 export function bangkokDate(instant: Date): string {
-  return new Date(instant.getTime() + BANGKOK_OFFSET_MS).toISOString().slice(0, 10);
+  return new Date(instant.getTime() + BANGKOK_OFFSET_MS)
+    .toISOString()
+    .slice(0, 10);
 }
 
 /** Days from 1970-01-01 to a YYYY-MM-DD date, without time-zone effects. */

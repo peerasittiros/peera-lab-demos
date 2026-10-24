@@ -5,10 +5,20 @@ import { dayNumber, daysInPeriod, periodEnd, periodStart } from './dates';
  * Days the contract covers inside a 'YYYY-MM' period, both ends inclusive. `endDate` null = open-ended.
  * Returns 0 when the contract does not overlap the period.
  */
-export function daysOccupiedInPeriod(period: string, startDate: string, endDate: string | null): number {
-  const from = dayNumber(startDate) > dayNumber(periodStart(period)) ? startDate : periodStart(period);
+export function daysOccupiedInPeriod(
+  period: string,
+  startDate: string,
+  endDate: string | null,
+): number {
+  const from =
+    dayNumber(startDate) > dayNumber(periodStart(period))
+      ? startDate
+      : periodStart(period);
   const lastDay = periodEnd(period);
-  const to = endDate !== null && dayNumber(endDate) < dayNumber(lastDay) ? endDate : lastDay;
+  const to =
+    endDate !== null && dayNumber(endDate) < dayNumber(lastDay)
+      ? endDate
+      : lastDay;
   const days = dayNumber(to) - dayNumber(from) + 1;
   return Math.max(0, days);
 }

@@ -1,15 +1,36 @@
 import { daysOccupiedInPeriod, prorateRent } from './proration';
-import { electricityAmount, unitsUsed, waterAmount, type ElectricityRate, type WaterRate } from './utilities';
+import {
+  electricityAmount,
+  unitsUsed,
+  waterAmount,
+  type ElectricityRate,
+  type WaterRate,
+} from './utilities';
 import { invoiceTotals, type InvoiceLine } from './invoice';
 import { settleDeposit, type Deduction } from './deposit';
 import { assertSatang, type Satang } from './money';
 
 /** The checklist items for move-in and move-out (01 §3.1 B.6). The owner marks each one OK or damaged. */
-export const CHECKLIST_KEYS = ['walls', 'floor', 'door_lock', 'aircon', 'furniture', 'appliances'] as const;
+export const CHECKLIST_KEYS = [
+  'walls',
+  'floor',
+  'door_lock',
+  'aircon',
+  'furniture',
+  'appliances',
+] as const;
 export type ChecklistStatus = 'ok' | 'damaged' | null;
-export type ChecklistItem = { key: string; labelTh: string; labelEn: string; status: ChecklistStatus };
+export type ChecklistItem = {
+  key: string;
+  labelTh: string;
+  labelEn: string;
+  status: ChecklistStatus;
+};
 
-export const CHECKLIST_LABELS: Record<(typeof CHECKLIST_KEYS)[number], { th: string; en: string }> = {
+export const CHECKLIST_LABELS: Record<
+  (typeof CHECKLIST_KEYS)[number],
+  { th: string; en: string }
+> = {
   walls: { th: 'ผนังและสี', en: 'Walls and paint' },
   floor: { th: 'พื้น', en: 'Floor' },
   door_lock: { th: 'ประตูและกุญแจ', en: 'Door and lock' },
@@ -45,19 +66,38 @@ export function moveInInvoice({
   period: string;
   deposit: Satang;
   advanceMonths: number;
-}): { daysOccupied: number; lines: InvoiceLine[]; subtotal: Satang; total: Satang } {
+}): {
+  daysOccupied: number;
+  lines: InvoiceLine[];
+  subtotal: Satang;
+  total: Satang;
+} {
   const daysOccupied = daysOccupiedInPeriod(period, startDate, null);
-  const rent = prorateRent({ monthlyRent, period, daysOccupied, mode: 'prorate' });
+  const rent = prorateRent({
+    monthlyRent,
+    period,
+    daysOccupied,
+    mode: 'prorate',
+  });
   const lines: InvoiceLine[] = [
     { kind: 'rent', amount: rent },
     { kind: 'deposit', amount: assertSatang(deposit, 'deposit') },
-    { kind: 'advance', amount: assertSatang(monthlyRent * advanceMonths, 'advance rent') },
+    {
+      kind: 'advance',
+      amount: assertSatang(monthlyRent * advanceMonths, 'advance rent'),
+    },
   ];
   return { daysOccupied, lines, ...invoiceTotals(lines) };
 }
 
 export type MoveOutInput = {
-  elec: { previous: number; current: number; meterDigits: number; rollover: boolean; rate: ElectricityRate };
+  elec: {
+    previous: number;
+    current: number;
+    meterDigits: number;
+    rollover: boolean;
+    rate: ElectricityRate;
+  };
   water: {
     previous: number;
     current: number;
@@ -113,9 +153,14 @@ export function moveOutSettlement(input: MoveOutInput): {
 }
 
 /** Items that were OK at move-in and are damaged at move-out: the candidates for a damage charge. */
-export function newDamage(moveIn: ChecklistItem[], moveOut: ChecklistItem[]): string[] {
+export function newDamage(
+  moveIn: ChecklistItem[],
+  moveOut: ChecklistItem[],
+): string[] {
   const before = new Map(moveIn.map((item) => [item.key, item.status]));
   return moveOut
-    .filter((item) => item.status === 'damaged' && before.get(item.key) !== 'damaged')
+    .filter(
+      (item) => item.status === 'damaged' && before.get(item.key) !== 'damaged',
+    )
     .map((item) => item.key);
 }

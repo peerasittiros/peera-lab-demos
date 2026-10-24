@@ -27,7 +27,9 @@ describe('daysOccupiedInPeriod', () => {
   });
 
   it('stops at the move-out date', () => {
-    expect(daysOccupiedInPeriod('2026-10', '2026-01-01', '2026-10-10')).toBe(10);
+    expect(daysOccupiedInPeriod('2026-10', '2026-01-01', '2026-10-10')).toBe(
+      10,
+    );
   });
 
   it('is zero outside the period', () => {
@@ -40,18 +42,35 @@ describe('prorateRent', () => {
   it('prorates rent × days / days-in-month, rounded to whole baht', () => {
     // 15,000 × 11 / 31 = 5,322.58… baht → 5,323
     expect(
-      prorateRent({ monthlyRent: 1500000, period: '2026-10', daysOccupied: 11, mode: 'prorate' }),
+      prorateRent({
+        monthlyRent: 1500000,
+        period: '2026-10',
+        daysOccupied: 11,
+        mode: 'prorate',
+      }),
     ).toBe(532300);
   });
 
   it('charges the full month when the setting says so', () => {
     expect(
-      prorateRent({ monthlyRent: 1500000, period: '2026-10', daysOccupied: 11, mode: 'full_month' }),
+      prorateRent({
+        monthlyRent: 1500000,
+        period: '2026-10',
+        daysOccupied: 11,
+        mode: 'full_month',
+      }),
     ).toBe(1500000);
   });
 
   it('charges the full rent for a whole month even in prorate mode', () => {
-    expect(prorateRent({ monthlyRent: 1500000, period: '2026-10', daysOccupied: 31, mode: 'prorate' })).toBe(1500000);
+    expect(
+      prorateRent({
+        monthlyRent: 1500000,
+        period: '2026-10',
+        daysOccupied: 31,
+        mode: 'prorate',
+      }),
+    ).toBe(1500000);
   });
 });
 
@@ -60,7 +79,13 @@ describe('lateFee', () => {
 
   it('is zero on the due day, even at 23:59 Bangkok time', () => {
     expect(daysLate(due, new Date('2026-10-05T16:59:00Z'))).toBe(0);
-    expect(lateFee({ mode: 'per_day', amount: 5000, cap: 50000 }, due, new Date('2026-10-05T16:59:00Z'))).toBe(0);
+    expect(
+      lateFee(
+        { mode: 'per_day', amount: 5000, cap: 50000 },
+        due,
+        new Date('2026-10-05T16:59:00Z'),
+      ),
+    ).toBe(0);
   });
 
   it('counts the first minute after the due day as day 1', () => {
@@ -74,7 +99,19 @@ describe('lateFee', () => {
   });
 
   it('charges a flat amount once, and the cap still applies', () => {
-    expect(lateFee({ mode: 'once', amount: 20000, cap: 20000 }, due, new Date('2026-10-20T03:00:00Z'))).toBe(20000);
-    expect(lateFee({ mode: 'once', amount: 20000, cap: 10000 }, due, new Date('2026-10-20T03:00:00Z'))).toBe(10000);
+    expect(
+      lateFee(
+        { mode: 'once', amount: 20000, cap: 20000 },
+        due,
+        new Date('2026-10-20T03:00:00Z'),
+      ),
+    ).toBe(20000);
+    expect(
+      lateFee(
+        { mode: 'once', amount: 20000, cap: 10000 },
+        due,
+        new Date('2026-10-20T03:00:00Z'),
+      ),
+    ).toBe(10000);
   });
 });

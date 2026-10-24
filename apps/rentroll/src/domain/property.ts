@@ -10,10 +10,14 @@ export type ContractForStatus = {
 };
 
 /** A contract that is not ended and has not run past its end date by `today`. */
-export function isLiveContract(contract: ContractForStatus, today: string): boolean {
+export function isLiveContract(
+  contract: ContractForStatus,
+  today: string,
+): boolean {
   return (
     contract.status !== 'ended' &&
-    (contract.endDate === null || dayNumber(contract.endDate) >= dayNumber(today))
+    (contract.endDate === null ||
+      dayNumber(contract.endDate) >= dayNumber(today))
   );
 }
 
@@ -45,12 +49,16 @@ export type RatePlanRow = { id: string; validFrom: string };
  * The plan in force on a date: the latest `valid_from` on or before it. Plans are never edited, so invoices that
  * used an older plan keep their amounts. Returns null before the first plan.
  */
-export function ratePlanOn<T extends RatePlanRow>(plans: T[], date: string): T | null {
+export function ratePlanOn<T extends RatePlanRow>(
+  plans: T[],
+  date: string,
+): T | null {
   const day = dayNumber(date);
   let best: T | null = null;
   for (const plan of plans) {
     if (dayNumber(plan.validFrom) > day) continue;
-    if (best === null || dayNumber(plan.validFrom) > dayNumber(best.validFrom)) best = plan;
+    if (best === null || dayNumber(plan.validFrom) > dayNumber(best.validFrom))
+      best = plan;
   }
   return best;
 }

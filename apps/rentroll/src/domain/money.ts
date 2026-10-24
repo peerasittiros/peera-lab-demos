@@ -3,7 +3,9 @@ export type Satang = number;
 
 export function assertSatang(value: number, label = 'amount'): Satang {
   if (!Number.isSafeInteger(value)) {
-    throw new RangeError(`${label} must be a whole number of satang, got ${value}`);
+    throw new RangeError(
+      `${label} must be a whole number of satang, got ${value}`,
+    );
   }
   return value;
 }

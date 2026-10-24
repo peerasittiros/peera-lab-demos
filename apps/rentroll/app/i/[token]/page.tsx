@@ -1,7 +1,7 @@
 import { InvoiceDocument } from '@/src/components/billing/InvoiceDocument';
 import { PrintButton } from '@/src/components/billing/PrintButton';
-import { loadPublicInvoice } from '@/src/db/queries/billing';
-import { getDb } from '@/src/server/db';
+import { loadSnapshotDocument } from '@/src/db/snapshot-document';
+import { bangkokDate } from '@/src/domain/dates';
 import { translator } from '@/src/i18n';
 import { isLocale } from '@peera/i18n';
 import type { Metadata } from 'next';
@@ -10,6 +10,7 @@ import { notFound } from 'next/navigation';
 import { cn, focusRing } from '@peera/ui';
 
 // The signed invoice link (01 §6.1). It needs no session and is kept out of search results. Drafts are never shown.
+// The invoice comes from the day's snapshot of the template (SPEC §5), so no visitor data is read here.
 export const metadata: Metadata = {
   robots: { index: false, follow: false },
 };
@@ -29,11 +30,36 @@ export default async function PublicInvoicePage({
   const bilingual = query.bilingual === '1';
   const { m } = translator(locale);
 
-  const found = await loadPublicInvoice(getDb(), token);
-  if (!found) notFound();
-  const { invoice, building, room, renterName, lines } = found;
+  const { snapshot } = await loadSnapshotDocument(bangkokDate(new Date()));
+  const invoice = snapshot.tables.invoice?.find(
+    (i) => i.publicToken === token && i.status !== 'draft',
+  );
+  if (!invoice) notFound();
+  const building = snapshot.tables.building?.find(
+    (b) => b.id === invoice.buildingId,
+  );
+  const contract = snapshot.tables.contract?.find(
+    (c) => c.id === invoice.contractId,
+  );
+  const room = snapshot.tables.room?.find((r) => r.id === contract?.roomId);
+  const primary = snapshot.tables.contract_renter?.find(
+    (cr) => cr.contractId === contract?.id && cr.isPrimary,
+  );
+  const renter = snapshot.tables.renter?.find(
+    (r) => r.id === primary?.renterId,
+  );
+  const lines = (snapshot.tables.invoice_line ?? []).filter(
+    (l) => l.invoiceId === invoice.id,
+  );
+  if (!building) notFound();
+
   const link = (params: Record<string, string>) => {
-    const qs = new URLSearchParams({ lang: locale, size, ...(bilingual ? { bilingual: '1' } : {}), ...params });
+    const qs = new URLSearchParams({
+      lang: locale,
+      size,
+      ...(bilingual ? { bilingual: '1' } : {}),
+      ...params,
+    });
     return `/i/${token}?${qs.toString()}`;
   };
   const chip = (active: boolean) =>
@@ -45,14 +71,29 @@ export default async function PublicInvoicePage({
 
   return (
     <main className="mx-auto flex max-w-[60rem] flex-col gap-4 px-4 py-6 print:p-0">
-      <nav aria-label={m.billing.public.size} className="no-print flex flex-wrap items-center gap-2">
-        <Link href={link({ size: 'a4' })} aria-current={size === 'a4' ? 'page' : undefined} className={chip(size === 'a4')}>
+      <nav
+        aria-label={m.billing.public.size}
+        className="no-print flex flex-wrap items-center gap-2"
+      >
+        <Link
+          href={link({ size: 'a4' })}
+          aria-current={size === 'a4' ? 'page' : undefined}
+          className={chip(size === 'a4')}
+        >
           {m.billing.public.a4}
         </Link>
-        <Link href={link({ size: 'a5' })} aria-current={size === 'a5' ? 'page' : undefined} className={chip(size === 'a5')}>
+        <Link
+          href={link({ size: 'a5' })}
+          aria-current={size === 'a5' ? 'page' : undefined}
+          className={chip(size === 'a5')}
+        >
           {m.billing.public.a5}
         </Link>
-        <Link href={link({ bilingual: bilingual ? '0' : '1' })} aria-current={bilingual ? 'page' : undefined} className={chip(bilingual)}>
+        <Link
+          href={link({ bilingual: bilingual ? '0' : '1' })}
+          aria-current={bilingual ? 'page' : undefined}
+          className={chip(bilingual)}
+        >
           {m.billing.public.bilingual}
         </Link>
         <PrintButton label={m.billing.public.print} />
@@ -74,8 +115,14 @@ export default async function PublicInvoicePage({
           bankName: building.bankName,
           bankAccountMasked: building.bankAccountMasked,
           roomNumber: room?.number ?? '',
-          renterName,
-          lines,
+          renterName: renter?.name ?? null,
+          lines: lines.map((l) => ({
+            id: l.id,
+            labelTh: l.labelTh,
+            labelEn: l.labelEn,
+            amountSatang: l.amountSatang,
+            meta: l.meta,
+          })),
         }}
       />
     </main>

@@ -10,7 +10,6 @@ import { messages } from '@/messages';
 import { AppShell } from '@/src/components/AppShell';
 import { LangSync } from '@/src/components/LangSync';
 import { env } from '@/src/env';
-import { getContext } from '@/src/server/context';
 
 export function generateStaticParams() {
   return locales.map((locale) => ({ locale }));
@@ -44,7 +43,6 @@ export default async function LocaleLayout({
   const { locale } = await params;
   if (!isLocale(locale)) notFound();
   const session = readDemoHeaders(await headers());
-  const { role } = await getContext();
 
   return (
     <LocaleProvider locale={locale} messages={messages[locale]}>
@@ -54,7 +52,7 @@ export default async function LocaleLayout({
         via={session?.via ?? 'cookie'}
       >
         <ToastProvider locale={locale}>
-          <AppShell locale={locale} role={role} siteUrl={env.PEERA_LAB_URL}>
+          <AppShell locale={locale} siteUrl={env.PEERA_LAB_URL}>
             {children}
           </AppShell>
         </ToastProvider>

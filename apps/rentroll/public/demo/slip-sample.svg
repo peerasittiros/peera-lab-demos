@@ -1,0 +1,15 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 360 480" role="img" aria-label="Sample transfer slip">
+  <rect x="0" y="0" width="360" height="480" fill="#ffffff"/>
+  <rect x="16" y="16" width="328" height="448" fill="none" stroke="#858a93" stroke-width="2" stroke-dasharray="6 4"/>
+  <text x="180" y="72" text-anchor="middle" font-family="sans-serif" font-size="20" font-weight="600" fill="#111827">SAMPLE SLIP</text>
+  <text x="180" y="100" text-anchor="middle" font-family="sans-serif" font-size="14" fill="#6b7280">ตัวอย่างสลิป ไม่ใช่การโอนจริง</text>
+  <line x1="40" y1="130" x2="320" y2="130" stroke="#e5e7eb" stroke-width="2"/>
+  <text x="40" y="175" font-family="sans-serif" font-size="14" fill="#6b7280">From</text>
+  <text x="320" y="175" text-anchor="end" font-family="sans-serif" font-size="16" fill="#111827">Demo tenant</text>
+  <text x="40" y="215" font-family="sans-serif" font-size="14" fill="#6b7280">To</text>
+  <text x="320" y="215" text-anchor="end" font-family="sans-serif" font-size="16" fill="#111827">Baan Suan Apartment</text>
+  <text x="40" y="255" font-family="sans-serif" font-size="14" fill="#6b7280">Amount</text>
+  <text x="320" y="255" text-anchor="end" font-family="monospace" font-size="16" fill="#111827">0.00 THB</text>
+  <line x1="40" y1="290" x2="320" y2="290" stroke="#e5e7eb" stroke-width="2"/>
+  <text x="180" y="400" text-anchor="middle" font-family="sans-serif" font-size="14" fill="#6b7280">Do not transfer real money</text>
+</svg>

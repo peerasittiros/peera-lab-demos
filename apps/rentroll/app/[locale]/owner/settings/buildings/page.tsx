@@ -1,25 +1,26 @@
+import { isLocale } from '@peera/i18n';
+import { notFound } from 'next/navigation';
 import { PageHeader } from '@/src/components/PageHeader';
-import { BuildingForm } from '@/src/components/property/PropertyForms';
-import { loadProperty } from '@/src/db/queries/property';
-import { bangkokDate } from '@/src/domain/dates';
-import { pageContext } from '@/src/server/page';
+import { BuildingsRatesLive } from '@/src/components/live/PropertyLive';
+import { translator } from '@/src/i18n';
 
-export default async function Page({ params }: { params: Promise<{ locale: string }> }) {
-  const { locale, db, tenantId, m } = await pageContext(params);
-  const { buildings } = await loadProperty(db, tenantId, bangkokDate(new Date()));
+/** Buildings (SPEC §4 O5), read-only in this demo. */
+export default async function Page({
+  params,
+}: {
+  params: Promise<{ locale: string }>;
+}) {
+  const { locale } = await params;
+  if (!isLocale(locale)) notFound();
+  const { m } = translator(locale);
   return (
     <>
-      <PageHeader locale={locale} title={m.property.buildings.title} description={m.property.buildings.intro} />
-      <div className="flex flex-col gap-10">
-        {buildings.map((b) => (
-          <section key={b.id} className="rounded-sm border border-line bg-surface-raised p-4 md:p-5">
-            <BuildingForm
-              locale={locale}
-              building={{ ...b, invoiceYearStyle: b.invoiceYearStyle === 'ce' ? 'ce' : 'be' }}
-            />
-          </section>
-        ))}
-      </div>
+      <PageHeader
+        locale={locale}
+        title={m.property.buildings.title}
+        description={m.property.buildings.intro}
+      />
+      <BuildingsRatesLive locale={locale} section="buildings" />
     </>
   );
 }

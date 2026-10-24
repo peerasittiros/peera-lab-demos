@@ -39,7 +39,10 @@ export function promptPayPayload({
     tlv('01', amount === undefined ? '11' : '12') +
     tlv('29', tlv('00', 'A000000677010111') + account) +
     tlv('53', '764');
-  if (amount !== undefined) payload += tlv('54', (assertSatang(amount, 'amount') / 100).toFixed(2));
+  if (amount !== undefined)
+    payload += tlv('54', (assertSatang(amount, 'amount') / 100).toFixed(2));
   payload += tlv('58', 'TH') + '6304';
-  return payload + crc16Ccitt(payload).toString(16).toUpperCase().padStart(4, '0');
+  return (
+    payload + crc16Ccitt(payload).toString(16).toUpperCase().padStart(4, '0')
+  );
 }

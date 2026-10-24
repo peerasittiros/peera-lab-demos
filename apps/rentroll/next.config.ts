@@ -10,9 +10,19 @@ const nextConfig: NextConfig = {
     '@peera/ui',
   ],
   async headers() {
-    return frameHeaders(
-      process.env.ALLOWED_FRAME_ANCESTORS ?? 'http://localhost:3000',
-    );
+    return [
+      ...frameHeaders(
+        process.env.ALLOWED_FRAME_ANCESTORS ?? 'http://localhost:3000',
+      ),
+      // The worker must be re-checked on every visit, so a new version reaches the phone (SPEC §6).
+      {
+        source: '/sw.js',
+        headers: [
+          { key: 'Cache-Control', value: 'no-cache' },
+          { key: 'Service-Worker-Allowed', value: '/' },
+        ],
+      },
+    ];
   },
 };
 

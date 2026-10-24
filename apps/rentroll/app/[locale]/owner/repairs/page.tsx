@@ -1,18 +1,26 @@
+import { isLocale } from '@peera/i18n';
+import { notFound } from 'next/navigation';
 import { PageHeader } from '@/src/components/PageHeader';
-import { RepairBoard } from '@/src/components/repairs/RepairBoard';
-import { LiveRefresh } from '@/src/components/tenant/TenantForms';
-import { loadRepairBoard } from '@/src/db/queries/repairs';
-import { pageContext } from '@/src/server/page';
+import { RepairsBoardLive } from '@/src/components/live/RepairsLive';
+import { translator } from '@/src/i18n';
 
-/** Owner's repair board (01 §3.1 E.17, §8 screen 11). The tenant side refreshes live as the board changes. */
-export default async function Page({ params }: { params: Promise<{ locale: string }> }) {
-  const { locale, db, tenantId, m } = await pageContext(params);
-  const tickets = await loadRepairBoard(db, tenantId);
+/** The repair board (SPEC §4 O15). */
+export default async function Page({
+  params,
+}: {
+  params: Promise<{ locale: string }>;
+}) {
+  const { locale } = await params;
+  if (!isLocale(locale)) notFound();
+  const { m } = translator(locale);
   return (
     <>
-      <LiveRefresh locale={locale} />
-      <PageHeader locale={locale} title={m.ownerRepairs.title} description={m.ownerRepairs.intro} />
-      <RepairBoard locale={locale} tickets={tickets} now={new Date().toISOString()} />
+      <PageHeader
+        locale={locale}
+        title={m.ownerRepairs.title}
+        description={m.ownerRepairs.intro}
+      />
+      <RepairsBoardLive locale={locale} />
     </>
   );
 }

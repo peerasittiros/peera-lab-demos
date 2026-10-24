@@ -21,7 +21,9 @@ export function allocatePayment(
   if (amount < 0) throw new RangeError('payment must not be negative');
   let remaining = amount;
   const allocations: Allocation[] = [];
-  const ordered = [...invoices].sort((a, b) => a.dueDate.localeCompare(b.dueDate) || a.id.localeCompare(b.id));
+  const ordered = [...invoices].sort(
+    (a, b) => a.dueDate.localeCompare(b.dueDate) || a.id.localeCompare(b.id),
+  );
   for (const invoice of ordered) {
     if (remaining === 0) break;
     if (invoice.outstanding <= 0) continue;

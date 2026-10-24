@@ -1,0 +1,319 @@
+/*
+ * Rentroll theme: the RentEase palette, radius and elevation from DESIGN.md §2–4.
+ * Imported after the shared token files in app/globals.css, so these values win for Rentroll only.
+ * `contrast.test.ts` reads this file, so keep each color as a literal hex (or a var() of another token here).
+ */
+
+:root,
+[data-theme='light'] {
+  --surface: #ffffff;
+  --surface-raised: #ffffff;
+  --surface-sunken: #f9fafb;
+  --ink: #111827;
+  --ink-muted: #6b7280;
+  --ink-faint: #9ca3af;
+  --line: #e5e7eb;
+  --line-strong: #858a93;
+
+  --product-accent: #7c3aed;
+  --product-on-accent: #ffffff;
+  --product-accent-soft: #ede9fe;
+  --primary-hover: #6d28d9;
+
+  --success: #15803d;
+  --success-fill: #16a34a;
+  --success-soft: #dcfce7;
+  --warning: #b45309;
+  --warning-soft: #fef3c7;
+  --danger: #dc2626;
+  --danger-ink: #b91c1c;
+  --danger-soft: #fee2e2;
+  --info: #7c3aed;
+  --info-soft: #ede9fe;
+  --focus-ring: #7c3aed;
+
+  --shadow-sm: 0 1px 2px rgb(0 0 0 / 0.05);
+  --shadow: 0 2px 6px rgb(0 0 0 / 0.07);
+  --shadow-md: 0 4px 14px rgb(0 0 0 / 0.09);
+  --shadow-lg: 0 8px 28px rgb(0 0 0 / 0.12);
+  --shadow-lift: var(--shadow-md);
+
+  /* Shared component tokens, mapped to the RentEase values so no Peera color leaks into Rentroll. */
+  --accent: var(--product-accent);
+  --on-accent: var(--product-on-accent);
+  --accent-soft: var(--product-accent-soft);
+  --accent-ink: var(--primary-hover);
+  --blueprint: var(--product-accent);
+  --blueprint-soft: var(--product-accent-soft);
+  --link: var(--product-accent);
+  --status-prototype: var(--warning);
+  --status-prototype-soft: var(--warning-soft);
+  --status-demo: var(--info);
+  --status-demo-soft: var(--info-soft);
+  --status-live: var(--success);
+  --status-live-soft: var(--success-soft);
+  --inverse-surface: #111827;
+  --inverse-ink: #ffffff;
+  --inverse-ink-muted: #d1d5db;
+  --inverse-accent: #c4b5fd;
+  --on-inverse-accent: #111827;
+}
+
+[data-theme='dark'] {
+  --surface: #0f0d15;
+  --surface-raised: #17141f;
+  --surface-sunken: #1f1b2a;
+  --ink: #f3f4f6;
+  --ink-muted: #a1a1aa;
+  --ink-faint: #787387;
+  --line: #2e2a3a;
+  --line-strong: #71717a;
+
+  --product-accent: #a78bfa;
+  --product-on-accent: #0f0d15;
+  --product-accent-soft: #2a1e4a;
+  --primary-hover: #c4b5fd;
+
+  --success: #4ade80;
+  --success-fill: #4ade80;
+  --success-soft: #12301f;
+  --warning: #fbbf24;
+  --warning-soft: #3a2a0a;
+  --danger: #f87171;
+  --danger-ink: #f87171;
+  --danger-soft: #3b1518;
+  --info: #a78bfa;
+  --info-soft: #2a1e4a;
+  --focus-ring: #a78bfa;
+
+  --shadow-sm: 0 1px 2px rgb(0 0 0 / 0.4);
+  --shadow: 0 2px 6px rgb(0 0 0 / 0.5);
+  --shadow-md: 0 4px 14px rgb(0 0 0 / 0.55);
+  --shadow-lg: 0 8px 28px rgb(0 0 0 / 0.6);
+  --shadow-lift: var(--shadow-md);
+
+  --accent: var(--product-accent);
+  --on-accent: var(--product-on-accent);
+  --accent-soft: var(--product-accent-soft);
+  --accent-ink: var(--primary-hover);
+  --blueprint: var(--product-accent);
+  --blueprint-soft: var(--product-accent-soft);
+  --link: var(--product-accent);
+  --status-prototype: var(--warning);
+  --status-prototype-soft: var(--warning-soft);
+  --status-demo: var(--info);
+  --status-demo-soft: var(--info-soft);
+  --status-live: var(--success);
+  --status-live-soft: var(--success-soft);
+  --inverse-surface: #f3f4f6;
+  --inverse-ink: #111827;
+  --inverse-ink-muted: #52525b;
+  --inverse-accent: #6d28d9;
+  --on-inverse-accent: #ffffff;
+}
+
+:root {
+  --radius-xs: 4px;
+  --radius-sm: 8px;
+  --radius-md: 12px;
+  --radius-lg: 16px;
+  --radius-full: 9999px;
+
+  --font-display: var(--nf-work-sans), var(--nf-anuphan), system-ui, sans-serif;
+  --font-display-th:
+    var(--nf-anuphan), var(--nf-work-sans), system-ui, sans-serif;
+  --font-sans:
+    var(--nf-dm-sans), var(--nf-plex-sans-thai), system-ui, sans-serif;
+  --font-mono: var(--nf-plex-mono), ui-monospace, monospace;
+}
+
+/*
+ * Type classes keep their names from packages/ui (so `ts()` and the shared components still work) and take the
+ * RentEase sizes (DESIGN.md §3). Thai twins use the `-th` classes. Headings step down one level below 640px.
+ */
+.display-xl,
+.display-xl-th,
+.headline-lg,
+.headline-lg-th,
+.headline-md,
+.headline-md-th,
+.headline-sm,
+.headline-sm-th,
+.title,
+.title-th,
+.body-lg,
+.body-lg-th,
+.body,
+.body-th,
+.body-sm,
+.body-sm-th,
+.label,
+.label-th,
+.caption,
+.caption-th,
+.money {
+  letter-spacing: 0;
+}
+
+.display-xl {
+  font-family: var(--font-display);
+  font-size: 36px;
+  line-height: 1.2;
+  font-weight: 700;
+}
+.display-xl-th {
+  font-family: var(--font-display-th);
+  font-size: 32px;
+  line-height: 1.4;
+  font-weight: 600;
+}
+.headline-lg {
+  font-family: var(--font-display);
+  font-size: 30px;
+  line-height: 1.25;
+  font-weight: 700;
+}
+.headline-lg-th {
+  font-family: var(--font-display-th);
+  font-size: 28px;
+  line-height: 1.45;
+  font-weight: 600;
+}
+.headline-md {
+  font-family: var(--font-display);
+  font-size: 24px;
+  line-height: 1.3;
+  font-weight: 600;
+}
+.headline-md-th {
+  font-family: var(--font-display-th);
+  font-size: 22px;
+  line-height: 1.5;
+  font-weight: 600;
+}
+.headline-sm {
+  font-family: var(--font-display);
+  font-size: 20px;
+  line-height: 1.35;
+  font-weight: 600;
+}
+.headline-sm-th {
+  font-family: var(--font-display-th);
+  font-size: 19px;
+  line-height: 1.5;
+  font-weight: 600;
+}
+/* `title` is the card and sheet title (h3 in DESIGN.md §3); shared components use it that way. */
+.title {
+  font-family: var(--font-display);
+  font-size: 20px;
+  line-height: 1.35;
+  font-weight: 600;
+}
+.title-th {
+  font-family: var(--font-display-th);
+  font-size: 19px;
+  line-height: 1.5;
+  font-weight: 600;
+}
+.body-lg {
+  font-family: var(--font-sans);
+  font-size: 18px;
+  line-height: 1.6;
+  font-weight: 400;
+}
+.body-lg-th {
+  font-family: var(--font-sans);
+  font-size: 18px;
+  line-height: 1.75;
+  font-weight: 400;
+}
+.body {
+  font-family: var(--font-sans);
+  font-size: 16px;
+  line-height: 1.6;
+  font-weight: 400;
+}
+.body-th {
+  font-family: var(--font-sans);
+  font-size: 16px;
+  line-height: 1.75;
+  font-weight: 400;
+}
+.body-sm {
+  font-family: var(--font-sans);
+  font-size: 14px;
+  line-height: 1.5;
+  font-weight: 400;
+}
+.body-sm-th {
+  font-family: var(--font-sans);
+  font-size: 14px;
+  line-height: 1.7;
+  font-weight: 400;
+}
+/* `label` is the input label (14/500, DESIGN.md §5). `caption` is the 12px metadata line. */
+.label {
+  font-family: var(--font-sans);
+  font-size: 14px;
+  line-height: 1.5;
+  font-weight: 500;
+}
+.label-th {
+  font-family: var(--font-sans);
+  font-size: 14px;
+  line-height: 1.7;
+  font-weight: 500;
+}
+.caption {
+  font-family: var(--font-sans);
+  font-size: 12px;
+  line-height: 1.4;
+  font-weight: 500;
+}
+.caption-th {
+  font-family: var(--font-sans);
+  font-size: 13px;
+  line-height: 1.6;
+  font-weight: 500;
+}
+.money {
+  font-family: var(--font-mono);
+  font-size: 16px;
+  line-height: 1.4;
+  font-weight: 400;
+  font-variant-numeric: tabular-nums;
+}
+
+@media (max-width: 639.98px) {
+  .display-xl {
+    font-size: 30px;
+    line-height: 1.25;
+    font-weight: 700;
+  }
+  .display-xl-th {
+    font-size: 28px;
+    line-height: 1.45;
+  }
+  .headline-lg {
+    font-size: 24px;
+    line-height: 1.3;
+  }
+  .headline-lg-th {
+    font-size: 22px;
+    line-height: 1.5;
+  }
+}
+
+/*
+ * Tailwind utilities for the Rentroll-only colors. The shared tokens are mapped in packages/ui/src/tailwind.css.
+ * Shadows have no utility here (`shadow-lift` is mapped there): use `shadow-(--shadow-md)` or `shadow-(--shadow-lg)`.
+ */
+@theme inline {
+  --color-primary: var(--product-accent);
+  --color-primary-hover: var(--primary-hover);
+  --color-primary-soft: var(--product-accent-soft);
+  --color-on-primary: var(--product-on-accent);
+  --color-success-fill: var(--success-fill);
+  --color-danger-ink: var(--danger-ink);
+}

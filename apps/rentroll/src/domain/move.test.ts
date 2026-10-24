@@ -1,5 +1,11 @@
 import { describe, expect, it } from 'vitest';
-import { blankChecklist, moveInInvoice, moveOutSettlement, newDamage, type ChecklistItem } from './move';
+import {
+  blankChecklist,
+  moveInInvoice,
+  moveOutSettlement,
+  newDamage,
+  type ChecklistItem,
+} from './move';
 
 describe('moveInInvoice', () => {
   it('prorates rent for a mid-month start, adds deposit and advance rent', () => {
@@ -92,7 +98,10 @@ describe('moveOutSettlement', () => {
 
   it('a lower final reading needs the rollover to be confirmed', () => {
     expect(() =>
-      moveOutSettlement({ ...base, elec: { ...base.elec, previous: 99980, current: 20 } }),
+      moveOutSettlement({
+        ...base,
+        elec: { ...base.elec, previous: 99980, current: 20 },
+      }),
     ).toThrow(RangeError);
     const wrapped = moveOutSettlement({
       ...base,
@@ -103,8 +112,13 @@ describe('moveOutSettlement', () => {
 });
 
 describe('newDamage', () => {
-  const at = (status: ChecklistItem['status'], key = 'walls'): ChecklistItem[] =>
-    blankChecklist().map((item) => (item.key === key ? { ...item, status } : { ...item, status: 'ok' }));
+  const at = (
+    status: ChecklistItem['status'],
+    key = 'walls',
+  ): ChecklistItem[] =>
+    blankChecklist().map((item) =>
+      item.key === key ? { ...item, status } : { ...item, status: 'ok' },
+    );
 
   it('flags items that went from OK to damaged, and ignores ones already damaged at move-in', () => {
     expect(newDamage(at('ok'), at('damaged'))).toEqual(['walls']);

@@ -41,18 +41,30 @@ describe('invoiceTotals', () => {
   });
 
   it('rejects a positive credit line and a negative charge', () => {
-    expect(() => invoiceTotals([{ kind: 'credit', amount: 100 }])).toThrow(RangeError);
-    expect(() => invoiceTotals([{ kind: 'rent', amount: -100 }])).toThrow(RangeError);
+    expect(() => invoiceTotals([{ kind: 'credit', amount: 100 }])).toThrow(
+      RangeError,
+    );
+    expect(() => invoiceTotals([{ kind: 'rent', amount: -100 }])).toThrow(
+      RangeError,
+    );
   });
 });
 
 describe('applyCredit (credit carry-forward)', () => {
   it('uses the credit against the amount due and keeps the rest', () => {
-    expect(applyCredit(30000, 50000)).toEqual({ applied: 30000, due: 20000, remainingCredit: 0 });
+    expect(applyCredit(30000, 50000)).toEqual({
+      applied: 30000,
+      due: 20000,
+      remainingCredit: 0,
+    });
   });
 
   it('carries unused credit forward when the bill is smaller', () => {
-    expect(applyCredit(30000, 10000)).toEqual({ applied: 10000, due: 0, remainingCredit: 20000 });
+    expect(applyCredit(30000, 10000)).toEqual({
+      applied: 10000,
+      due: 0,
+      remainingCredit: 20000,
+    });
   });
 });
 
@@ -73,7 +85,9 @@ describe('allocatePayment', () => {
   });
 
   it('a partial payment leaves the oldest invoice partly open', () => {
-    expect(allocatePayment(400000, invoices).allocations).toEqual([{ invoiceId: 'a', amount: 400000 }]);
+    expect(allocatePayment(400000, invoices).allocations).toEqual([
+      { invoiceId: 'a', amount: 400000 },
+    ]);
   });
 
   it('turns an overpayment into credit', () => {
@@ -81,8 +95,13 @@ describe('allocatePayment', () => {
   });
 
   it('skips paid invoices', () => {
-    const withPaid = [{ id: 'x', dueDate: '2026-07-05', outstanding: 0 }, ...invoices];
-    expect(allocatePayment(100, withPaid).allocations).toEqual([{ invoiceId: 'a', amount: 100 }]);
+    const withPaid = [
+      { id: 'x', dueDate: '2026-07-05', outstanding: 0 },
+      ...invoices,
+    ];
+    expect(allocatePayment(100, withPaid).allocations).toEqual([
+      { invoiceId: 'a', amount: 100 },
+    ]);
   });
 });
 
@@ -95,31 +114,72 @@ describe('settleDeposit', () => {
       damages: 120000,
       cleaningFee: 50000,
     });
-    expect(deductions.map((d) => d.kind)).toEqual(['unpaid', 'final_utilities', 'damages', 'cleaning']);
+    expect(deductions.map((d) => d.kind)).toEqual([
+      'unpaid',
+      'final_utilities',
+      'damages',
+      'cleaning',
+    ]);
     expect(refund).toBe(1285000);
   });
 
   it('returns a negative refund when the tenant owes money', () => {
-    expect(settleDeposit({ deposit: 1500000, unpaid: 1600000, finalUtilities: 0, damages: 0, cleaningFee: 0 }).refund).toBe(-100000);
+    expect(
+      settleDeposit({
+        deposit: 1500000,
+        unpaid: 1600000,
+        finalUtilities: 0,
+        damages: 0,
+        cleaningFee: 0,
+      }).refund,
+    ).toBe(-100000);
   });
 });
 
 describe('formatDocumentNumber', () => {
   it('uses the Buddhist year when asked, like INV-2569-10-0001', () => {
     expect(
-      formatDocumentNumber({ prefix: 'INV', ceYear: 2026, month: 10, sequence: 1, style: 'be' }),
+      formatDocumentNumber({
+        prefix: 'INV',
+        ceYear: 2026,
+        month: 10,
+        sequence: 1,
+        style: 'be',
+      }),
     ).toBe('INV-2569-10-0001');
   });
 
   it('uses the Gregorian year in CE style', () => {
     expect(documentYear(2026, 'ce')).toBe(2026);
     expect(
-      formatDocumentNumber({ prefix: 'CN', ceYear: 2026, month: 3, sequence: 42, style: 'ce' }),
+      formatDocumentNumber({
+        prefix: 'CN',
+        ceYear: 2026,
+        month: 3,
+        sequence: 42,
+        style: 'ce',
+      }),
     ).toBe('CN-2026-03-0042');
   });
 
   it('rejects sequences outside 1–9999', () => {
-    expect(() => formatDocumentNumber({ prefix: 'INV', ceYear: 2026, month: 1, sequence: 0, style: 'ce' })).toThrow(RangeError);
-    expect(() => formatDocumentNumber({ prefix: 'INV', ceYear: 2026, month: 1, sequence: 10000, style: 'ce' })).toThrow(RangeError);
+    expect(() =>
+      formatDocumentNumber({
+        prefix: 'INV',
+        ceYear: 2026,
+        month: 1,
+        sequence: 0,
+        style: 'ce',
+      }),
+    ).toThrow(RangeError);
+    expect(() =>
+      formatDocumentNumber({
+        prefix: 'INV',
+        ceYear: 2026,
+        month: 1,
+        sequence: 10000,
+        style: 'ce',
+      }),
+    ).toThrow(RangeError);
   });
 });

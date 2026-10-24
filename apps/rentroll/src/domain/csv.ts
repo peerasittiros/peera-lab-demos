@@ -12,7 +12,10 @@ function cell(value: string | number | null): string {
  * A CSV file as Excel and Google Sheets read it: a byte-order mark first, so Thai text opens intact, and CRLF line
  * ends. Money is baht with two decimals, so callers pass `baht(satang)`.
  */
-export function toCsv(header: string[], rows: (string | number | null)[][]): string {
+export function toCsv(
+  header: string[],
+  rows: (string | number | null)[][],
+): string {
   const lines = [header, ...rows].map((row) => row.map(cell).join(','));
   return `${BOM}${lines.join('\r\n')}\r\n`;
 }

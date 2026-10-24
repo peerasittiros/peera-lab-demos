@@ -1,19 +1,22 @@
+import { isLocale } from '@peera/i18n';
+import { notFound } from 'next/navigation';
 import { PageHeader } from '@/src/components/PageHeader';
-import { LiveRefresh } from '@/src/components/tenant/TenantForms';
-import { TenantHome } from '@/src/components/tenant/TenantViews';
-import { loadTenantHome } from '@/src/db/queries/tenant';
-import { bangkokDate } from '@/src/domain/dates';
-import { pageContext } from '@/src/server/page';
+import { TenantHomeLive } from '@/src/components/live/TenantHomeLive';
+import { translator } from '@/src/i18n';
 
-/** Tenant home (01 §3.1 D.13, §8 screen 6). */
-export default async function Page({ params }: { params: Promise<{ locale: string }> }) {
-  const { locale, db, tenantId, m } = await pageContext(params);
-  const home = await loadTenantHome(db, tenantId, bangkokDate(new Date()));
+/** Tenant home (01 §3.1 D.13, §8 screen 6), read from the browser store. */
+export default async function Page({
+  params,
+}: {
+  params: Promise<{ locale: string }>;
+}) {
+  const { locale } = await params;
+  if (!isLocale(locale)) notFound();
+  const { m } = translator(locale);
   return (
     <>
-      <LiveRefresh locale={locale} />
       <PageHeader locale={locale} title={m.placeholder.tenantHome} />
-      <TenantHome locale={locale} home={home} />
+      <TenantHomeLive locale={locale} />
     </>
   );
 }

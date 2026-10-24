@@ -8,6 +8,9 @@ export const proxy = createDemoProxy({
 });
 
 export const config = {
-  // `/i/[token]` is the public invoice link: no locale redirect and no demo session (01 §6.1).
-  matcher: ['/((?!api|i/|_next/static|_next/image|favicon.ico).*)'],
+  // `/i/[token]` is the public invoice link: no locale redirect and no demo session (01 §6.1). The PWA files (the
+  // worker, the manifest, the icons, the apple icon and the offline shell's static files) are served as they are.
+  matcher: [
+    '/((?!api|i/|_next/static|_next/image|favicon.ico|sw\\.js|manifest\\.webmanifest|icons/|apple-icon|icon).*)',
+  ],
 };

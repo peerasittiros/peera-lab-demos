@@ -1,17 +1,22 @@
-import { RoutePlaceholder } from '@/src/components/RoutePlaceholder';
-import { pageContext } from '@/src/server/page';
+import { isLocale } from '@peera/i18n';
+import { notFound } from 'next/navigation';
+import { PageHeader } from '@/src/components/PageHeader';
+import { InvoicesLive } from '@/src/components/live/InvoicesLive';
+import { translator } from '@/src/i18n';
 
+/** Invoices (SPEC §4 O11): every invoice, filtered, with its public link. Read from the browser store. */
 export default async function Page({
   params,
 }: {
   params: Promise<{ locale: string }>;
 }) {
-  const { locale, m } = await pageContext(params);
+  const { locale } = await params;
+  if (!isLocale(locale)) notFound();
+  const { m } = translator(locale);
   return (
-    <RoutePlaceholder
-      locale={locale}
-      title={m.placeholder.invoices}
-      description={m.common.comingSoon}
-    />
+    <>
+      <PageHeader locale={locale} title={m.placeholder.invoices} />
+      <InvoicesLive locale={locale} />
+    </>
   );
 }

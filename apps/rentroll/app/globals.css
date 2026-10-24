@@ -1,6 +1,8 @@
 @import 'tailwindcss';
 @import '@peera/ui/tailwind.css';
 @import '@peera/demo-kit/demo-kit.css';
+/* Rentroll's RentEase theme: last, so it overrides the shared tokens for this app only. */
+@import '../src/theme/theme.css';
 
 /* The shared packages' classes live outside this app. */
 @source '../../../packages/ui/src';
