@@ -197,6 +197,7 @@ export const en = defineMessages()({
     collected: 'Collected this month',
     outstanding: 'Outstanding',
     overdue: 'Overdue',
+    overdueAmount: 'Overdue amount',
     moveOuts: 'Move-outs (notice given)',
     openRepairs: 'Open repairs',
     progress: 'Collection progress',

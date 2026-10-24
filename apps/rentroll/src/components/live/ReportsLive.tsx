@@ -1,13 +1,10 @@
 'use client';
 
 import type { Locale } from '@peera/i18n';
-import { formatMoney } from '@peera/i18n';
 import { Button, cn, focusRing, toast } from '@peera/ui';
-import Link from 'next/link';
 import { useCallback, useState } from 'react';
 import { useStore } from '@/src/client-store/hooks';
 import {
-  dashboard,
   depositsReport,
   rentRoll,
   utilitiesReport,
@@ -17,178 +14,12 @@ import { baht, toCsv } from '@/src/domain/csv';
 import { addMonths } from '@/src/domain/dates';
 import { translator, type Messages } from '@/src/i18n';
 import { PageHeader } from '@/src/components/PageHeader';
-import { Dot, KV } from './KV';
 import { ReadyGate } from './ReadyGate';
 
 const periodOf = (s: StoreState) =>
   s.snapshotDate ? s.snapshotDate.slice(0, 7) : '';
 const todayOf = (s: StoreState) => s.snapshotDate ?? '';
 
-/** The owner's dashboard (SPEC §4 O1): KPIs, twelve months, usage, vacancy and the to-do list. */
-export function DashboardLive({ locale }: { locale: Locale }) {
-  return (
-    <ReadyGate locale={locale}>
-      <DashboardBody locale={locale} />
-    </ReadyGate>
-  );
-}
-
-function DashboardBody({ locale }: { locale: Locale }) {
-  const { m } = translator(locale);
-  const p = m.dashboard;
-  const select = useCallback(
-    (s: StoreState) =>
-      s.snapshotDate
-        ? dashboard(s.data, s.snapshotDate.slice(0, 7), s.snapshotDate)
-        : null,
-    [],
-  );
-  const data = useStore(select);
-  if (!data) return null;
-  const k = data.kpis;
-  const maxBilled = Math.max(1, ...data.revenue.map((r) => r.billedSatang));
-  const tiles: { label: string; value: string }[] = [
-    {
-      label: p.occupancy,
-      value:
-        k.occupancy === null
-          ? m.contracts.blank
-          : `${Math.round(k.occupancy * 100)}% · ${k.occupied}/${k.rentable}`,
-    },
-    { label: p.billed, value: formatMoney(k.billedSatang, locale) },
-    { label: p.collected, value: formatMoney(k.collectedSatang, locale) },
-    { label: p.outstanding, value: formatMoney(k.outstandingSatang, locale) },
-    {
-      label: p.overdue,
-      value: `${k.overdueCount} · ${formatMoney(k.overdueSatang, locale)}`,
-    },
-    { label: p.moveOuts, value: String(k.moveOuts30) },
-    { label: p.openRepairs, value: String(k.openRepairs) },
-  ];
-  const todo = [
-    {
-      label: p.todo.meters,
-      count: data.todo.metersMissing,
-      href: `/${locale}/owner/meters/current`,
-    },
-    {
-      label: p.todo.slips,
-      count: data.todo.slipsWaiting,
-      href: `/${locale}/owner/payments/review`,
-    },
-    {
-      label: p.todo.notices,
-      count: data.todo.noticesOpen,
-      href: `/${locale}/owner/contracts`,
-    },
-    {
-      label: p.todo.overdue,
-      count: data.todo.overdueCount,
-      href: `/${locale}/owner/overdue`,
-    },
-    {
-      label: p.todo.repairs,
-      count: data.todo.openRepairs,
-      href: `/${locale}/owner/repairs`,
-    },
-  ];
-
-  return (
-    <>
-      <PageHeader locale={locale} title={p.title} description={p.intro} />
-      <dl className="grid grid-cols-2 gap-3 md:grid-cols-4">
-        {tiles.map((t) => (
-          <div
-            key={t.label}
-            className="flex flex-col gap-1 rounded-sm border border-line bg-surface-raised p-4"
-          >
-            <dt className="text-ink-muted">{t.label}</dt>
-            <dd className="tabular-nums text-ink">{t.value}</dd>
-          </div>
-        ))}
-      </dl>
-
-      <section className="mt-8 flex flex-col gap-3">
-        <h2 className="text-ink">{p.revenue}</h2>
-        <ul className="flex flex-col">
-          {data.revenue.map((r) => (
-            <li
-              key={r.period}
-              className="grid grid-cols-[6rem_1fr_auto] items-center gap-3 border-b border-line py-2 odd:bg-surface-sunken"
-            >
-              <span className="tabular-nums text-ink-muted">{r.period}</span>
-              <span
-                className="block h-3 rounded-sm bg-product-accent"
-                style={{
-                  width: `${(r.billedSatang / maxBilled) * 100}%`,
-                  minWidth: r.billedSatang ? '2px' : '0',
-                }}
-              />
-              <span className="tabular-nums text-ink">
-                {formatMoney(r.billedSatang, locale)}
-                <span className="ml-2 text-ink-muted">
-                  {p.rate}{' '}
-                  {r.collectionRate === null
-                    ? m.contracts.blank
-                    : `${Math.round(r.collectionRate * 100)}%`}
-                </span>
-              </span>
-            </li>
-          ))}
-        </ul>
-      </section>
-
-      <div className="mt-8 grid gap-6 md:grid-cols-2">
-        <section className="flex flex-col gap-2 rounded-sm border border-line bg-surface-raised p-4">
-          <h2 className="text-ink">{p.todo.title}</h2>
-          <ul className="flex flex-col gap-2">
-            {todo.map((t) => (
-              <li key={t.href} className="flex justify-between gap-3">
-                <Link
-                  href={t.href}
-                  className={cn(
-                    'min-h-11 text-ink underline-offset-4 hover:underline',
-                    focusRing,
-                  )}
-                >
-                  {t.label}
-                </Link>
-                <span className="tabular-nums text-ink">{t.count}</span>
-              </li>
-            ))}
-          </ul>
-        </section>
-        <section className="flex flex-col gap-4">
-          <div className="flex flex-col gap-2 rounded-sm border border-line bg-surface-raised p-4">
-            <h2 className="text-ink">{p.usage}</h2>
-            {data.usage.map((u) => (
-              <KV key={u.buildingName} label={u.buildingName}>
-                <span className="tabular-nums">
-                  {u.electricityUnits}
-                  <Dot />
-                  {u.waterUnits}
-                </span>
-              </KV>
-            ))}
-          </div>
-          <div className="flex flex-col gap-2 rounded-sm border border-line bg-surface-raised p-4">
-            <h2 className="text-ink">{p.vacancy}</h2>
-            {data.vacancy.length === 0 ? (
-              <p className="text-ink-muted">{p.noVacancy}</p>
-            ) : null}
-            {data.vacancy.map((v) => (
-              <KV key={v.roomNumber} label={v.roomNumber}>
-                <span className="tabular-nums">
-                  {v.days === null ? p.never : `${v.days} ${p.days}`}
-                </span>
-              </KV>
-            ))}
-          </div>
-        </section>
-      </div>
-    </>
-  );
-}
 
 type ReportKind = 'rent-roll' | 'utilities' | 'deposits';
 
@@ -393,7 +224,7 @@ function ReportTable({
           {r.print}
         </Button>
       </div>
-      <div className="overflow-x-auto">
+      <div className="hidden overflow-x-auto md:block">
         <table className="w-full border-collapse text-left">
           <thead>
             <tr className="border-b border-line text-ink-muted">
@@ -443,6 +274,43 @@ function ReportTable({
           ) : null}
         </table>
       </div>
+      <ul className="m-0 flex list-none flex-col gap-3 p-0 md:hidden">
+        {rows.map((row, i) => (
+          <li
+            key={i}
+            className="flex flex-col gap-2 rounded-sm border border-line bg-surface-raised p-4"
+          >
+            <span className="text-ink">{row[0]}</span>
+            <dl className="m-0 flex flex-col gap-1">
+              {row.slice(1).map((cell, j) => (
+                <div key={j} className="flex justify-between gap-4">
+                  <dt className="text-ink-muted">{header[j + 1]}</dt>
+                  <dd className="m-0 text-right tabular-nums text-ink">
+                    {cell}
+                  </dd>
+                </div>
+              ))}
+            </dl>
+          </li>
+        ))}
+        {totals ? (
+          <li className="flex flex-col gap-2 rounded-sm border-2 border-line p-4">
+            <span className="font-semibold text-ink">{totals[0]}</span>
+            <dl className="m-0 flex flex-col gap-1">
+              {totals.slice(1).map((cell, j) =>
+                cell === '' ? null : (
+                  <div key={j} className="flex justify-between gap-4">
+                    <dt className="text-ink-muted">{header[j + 1]}</dt>
+                    <dd className="m-0 text-right font-semibold tabular-nums text-ink">
+                      {cell}
+                    </dd>
+                  </div>
+                ),
+              )}
+            </dl>
+          </li>
+        ) : null}
+      </ul>
     </>
   );
 }

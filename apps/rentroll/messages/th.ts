@@ -199,6 +199,7 @@ export const th: typeof en = {
     collected: 'รับชำระเดือนนี้',
     outstanding: 'ยอดค้างรวม',
     overdue: 'ค้างชำระ',
+    overdueAmount: 'ยอดค้างชำระ',
     moveOuts: 'แจ้งย้ายออก',
     openRepairs: 'งานซ่อมที่ยังเปิดอยู่',
     progress: 'ความคืบหน้าการรับชำระ',
