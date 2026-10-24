@@ -41,13 +41,14 @@ export function DemoActions({ locale, m }: { locale: Locale; m: Messages }) {
       <DropdownMenuTrigger
         locale={locale}
         disabled={busy}
+        aria-label={m.nav.demoActions}
         className={cn(
           ts('ui', locale),
           'inline-flex min-h-11 shrink-0 items-center gap-1 border-l border-line px-3 text-ink hover:bg-surface-raised md:min-h-9',
           focusRing,
         )}
       >
-        {m.nav.demoActions}
+        <span className="hidden md:inline">{m.nav.demoActions}</span>
         <ChevronDown aria-hidden size={16} strokeWidth={1.75} />
       </DropdownMenuTrigger>
       <DropdownMenuContent locale={locale} align="end">

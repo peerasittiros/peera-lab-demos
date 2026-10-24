@@ -471,7 +471,7 @@ export const en = defineMessages()({
       amount: 'Amount you paid (baht)',
       slip: 'Transfer slip',
       slipNote:
-        'Demo: the slip image is not stored. Only the amount and the time are recorded.',
+        'Demo: an uploaded slip stays on this device for this visit only. The database keeps the amount and the time.',
       submit: 'Send slip for review',
       waiting: 'Waiting for review',
       sent: 'Slip sent. The owner will review it.',
