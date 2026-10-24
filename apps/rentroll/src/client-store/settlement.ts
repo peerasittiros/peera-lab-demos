@@ -14,6 +14,23 @@ const OPEN_STATUSES = ['sent', 'partially_paid'];
 
 export type Allocation = { invoiceId: string; amount: number };
 
+/** What the credit notes against an invoice have taken off it. A sent invoice is never edited; credits sit beside it. */
+export function creditedOn(data: Data, invoiceId: string): number {
+  return data.credit_note
+    .filter((c) => c.invoiceId === invoiceId)
+    .reduce((sum, c) => sum + c.amountSatang, 0);
+}
+
+/** What an invoice still owes: its total, less payments, less credit notes. */
+export function balanceOf(
+  data: Data,
+  invoice: { id: string; totalSatang: number; paidSatang: number },
+): number {
+  return (
+    invoice.totalSatang - invoice.paidSatang - creditedOn(data, invoice.id)
+  );
+}
+
 /** The contract's invoices that still owe money, oldest due date first. */
 export function openInvoices(data: Data, contractId: string) {
   return data.invoice
@@ -23,7 +40,7 @@ export function openInvoices(data: Data, contractId: string) {
     .map((i) => ({
       id: i.id,
       dueDate: i.dueDate,
-      outstanding: i.totalSatang - i.paidSatang,
+      outstanding: balanceOf(data, i),
       total: i.totalSatang,
       paid: i.paidSatang,
     }));

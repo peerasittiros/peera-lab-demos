@@ -1,3 +1,4 @@
+import { balanceOf } from '../settlement';
 import { daysLate, lateFee } from '@/src/domain/late-fee';
 import { ratesOf } from '@/src/domain/billing-run';
 import { ratePlanOn } from '@/src/domain/property';
@@ -53,7 +54,7 @@ export function overdueList(data: Data, ops: Op[], today: string, asOf: Date) {
         renterName: renter?.name ?? null,
         dueDate: i.dueDate,
         daysLate: daysLate(i.dueDate, asOf),
-        outstandingSatang: i.totalSatang - i.paidSatang,
+        outstandingSatang: balanceOf(data, i),
         lateFeeSatang: rule ? lateFee(rule, i.dueDate, asOf) : 0,
         reminders: remindersFor(ops, i.id),
         contractId: i.contractId,

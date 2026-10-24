@@ -1,3 +1,4 @@
+import { balanceOf } from '../settlement';
 import { isLiveContract } from '@/src/domain/property';
 import type { Data, Row } from '../schema';
 
@@ -68,7 +69,7 @@ export function loadTenantHome(data: Data, today: string) {
       id: i.id,
       number: i.number,
       dueDate: i.dueDate,
-      outstanding: i.totalSatang - i.paidSatang,
+      outstanding: balanceOf(data, i),
     }))
     .sort(
       (a, b) => a.dueDate.localeCompare(b.dueDate) || a.id.localeCompare(b.id),
@@ -100,7 +101,7 @@ export function loadBills(data: Data, contractId: string, roomId: string) {
       status: i.status,
       totalSatang: i.totalSatang,
       paidSatang: i.paidSatang,
-      outstandingSatang: i.totalSatang - i.paidSatang,
+      outstandingSatang: balanceOf(data, i),
       lines: data.invoice_line
         .filter((l) => l.invoiceId === i.id)
         .map((l) => ({

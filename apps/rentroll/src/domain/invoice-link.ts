@@ -19,6 +19,8 @@ export type LinkedInvoice = {
   dueDate: string;
   totalSatang: number;
   paidSatang: number;
+  /** Credit notes against the invoice. Optional: links made before credit notes existed count as zero. */
+  creditedSatang?: number;
   buildingNameTh: string;
   buildingNameEn: string | null;
   bankName: string | null;

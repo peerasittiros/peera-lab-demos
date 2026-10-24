@@ -20,6 +20,7 @@ import { translator, type Messages } from '@/src/i18n';
 import { PageHeader } from '@/src/components/PageHeader';
 import { ReadyGate } from './ReadyGate';
 import { Dot, KV } from './KV';
+import { BuildingEditForm, RatePlanForm } from './OwnerEdits';
 
 type Filter =
   | 'all'
@@ -405,6 +406,8 @@ export function BuildingsRatesLive({
   );
 }
 
+const todayOf = (s: StoreState) => s.snapshotDate ?? '';
+
 function BuildingsRatesBody({
   locale,
   section,
@@ -419,10 +422,11 @@ function BuildingsRatesBody({
     [],
   );
   const rows = useStore(select);
+  const today = useStore(todayOf);
   if (section === 'buildings') {
     return (
       <>
-        <p className="mb-4 text-ink-muted">{m.ownerLive.buildingsRead}</p>
+        <p className="mb-4 text-ink-muted">{m.ownerEdits.buildingsIntro}</p>
         <ul className="flex flex-col gap-3">
           {rows.map(({ building: b }) => (
             <li
@@ -441,6 +445,9 @@ function BuildingsRatesBody({
                 <Dot />
                 <KV label={p.buildings.dueDay}>{b.dueDay}</KV>
               </span>
+              <div className="mt-2">
+                <BuildingEditForm locale={locale} building={b} />
+              </div>
             </li>
           ))}
         </ul>
@@ -449,7 +456,7 @@ function BuildingsRatesBody({
   }
   return (
     <>
-      <p className="mb-4 text-ink-muted">{m.ownerLive.ratesRead}</p>
+      <p className="mb-4 text-ink-muted">{m.ownerEdits.ratesIntro}</p>
       {rows.map(({ building, plans, current }) => (
         <section key={building.id} className="mb-6 flex flex-col gap-3">
           <h2 className="text-ink">
@@ -461,9 +468,13 @@ function BuildingsRatesBody({
             <p className="tabular-nums text-ink">
               <KV label={p.rates.current}>{current.validFrom}</KV>
               <Dot />
-              <KV label={p.rates.electricityRate}>{current.elecRateSatang}</KV>
+              <KV label={p.rates.electricityRate}>
+                {formatMoney(current.elecRateSatang, locale)}
+              </KV>
               <Dot />
-              <KV label={p.rates.commonFee}>{current.commonFeeSatang}</KV>
+              <KV label={p.rates.commonFee}>
+                {formatMoney(current.commonFeeSatang, locale)}
+              </KV>
             </p>
           ) : (
             <p className="text-ink-muted">{m.ownerLive.noPlan}</p>
@@ -475,6 +486,12 @@ function BuildingsRatesBody({
               </li>
             ))}
           </ul>
+          <RatePlanForm
+            locale={locale}
+            buildingId={building.id}
+            today={today}
+            current={current}
+          />
         </section>
       ))}
     </>

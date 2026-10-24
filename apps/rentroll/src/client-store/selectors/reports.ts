@@ -1,3 +1,4 @@
+import { balanceOf } from '../settlement';
 import { addMonths } from '@/src/domain/dates';
 import { roomStatus, type RoomStatus } from '@/src/domain/property';
 import { meterRound } from './meters';
@@ -81,7 +82,7 @@ export function rentRoll(
         utilitiesSatang: inv ? utilitiesOf(inv.id) : 0,
         billedSatang: inv?.totalSatang ?? 0,
         paidSatang: inv?.paidSatang ?? 0,
-        outstandingSatang: inv ? inv.totalSatang - inv.paidSatang : 0,
+        outstandingSatang: inv ? balanceOf(data, inv) : 0,
       };
     })
     .sort((a, b) => a.roomNumber.localeCompare(b.roomNumber));
@@ -183,7 +184,7 @@ export function dashboard(data: Data, period: string, today: string) {
 
   const open = data.invoice.filter((i) => OPEN_STATUSES.includes(i.status));
   const outstanding = open.reduce(
-    (sum, i) => sum + (i.totalSatang - i.paidSatang),
+    (sum, i) => sum + balanceOf(data, i),
     0,
   );
   const overdue = open.filter((i) => i.dueDate < today);
@@ -284,7 +285,7 @@ export function dashboard(data: Data, period: string, today: string) {
       outstandingSatang: outstanding,
       overdueCount: overdue.length,
       overdueSatang: overdue.reduce(
-        (s, i) => s + (i.totalSatang - i.paidSatang),
+        (s, i) => s + balanceOf(data, i),
         0,
       ),
       moveOuts30: notices.length,

@@ -15,6 +15,7 @@ import {
 import type { StoreState } from '@/src/client-store/store';
 import { translator, type Messages } from '@/src/i18n';
 import { ReadyGate } from './ReadyGate';
+import { CreditNoteForm } from './OwnerEdits';
 import { publicLinkFor } from './public-link';
 
 const listView = (s: StoreState) => invoiceList(s.data);
@@ -240,6 +241,16 @@ function InvoiceRow({
           </button>
         ) : null}
       </span>
+      {role === 'owner' &&
+      (inv.status === 'sent' || inv.status === 'partially_paid') ? (
+        <div className="md:col-span-full">
+          <CreditNoteForm
+            locale={locale}
+            invoiceId={inv.id}
+            owedSatang={inv.balanceSatang}
+          />
+        </div>
+      ) : null}
     </li>
   );
 }

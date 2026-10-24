@@ -1,3 +1,4 @@
+import { balanceOf } from '../settlement';
 import type { Data } from '../schema';
 
 /** Selectors for the owner's payment review (mirrors `src/db/queries/payments.ts`). Pure, like the tenant selectors. */
@@ -25,7 +26,7 @@ export function loadReviewQueue(data: Data) {
         .map((i) => ({
           id: i.id,
           number: i.number,
-          outstanding: i.totalSatang - i.paidSatang,
+          outstanding: balanceOf(data, i),
           dueDate: i.dueDate,
         }))
         .sort(

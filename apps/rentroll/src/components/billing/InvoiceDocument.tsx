@@ -19,6 +19,7 @@ export type DocumentData = {
   dueDate: string;
   totalSatang: number;
   paidSatang: number;
+  creditedSatang?: number;
   buildingNameTh: string;
   buildingNameEn: string | null;
   bankName: string | null;
@@ -36,12 +37,15 @@ const SIZE = {
 
 /** Thai dates use the Buddhist year (พ.ศ.) through Intl (CLAUDE.md, "Rules that are easy to break"). */
 function dateText(iso: string, locale: Locale): string {
-  const formatter = new Intl.DateTimeFormat(locale === 'th' ? 'th-TH' : 'en-GB', {
-    day: 'numeric',
-    month: 'short',
-    year: 'numeric',
-    timeZone: 'Asia/Bangkok',
-  });
+  const formatter = new Intl.DateTimeFormat(
+    locale === 'th' ? 'th-TH' : 'en-GB',
+    {
+      day: 'numeric',
+      month: 'short',
+      year: 'numeric',
+      timeZone: 'Asia/Bangkok',
+    },
+  );
   return formatter.format(new Date(`${iso}T12:00:00+07:00`));
 }
 
@@ -75,7 +79,8 @@ export function InvoiceDocument({
       <span lang={locale}>{locale === 'th' ? th : en}</span>
     );
   const amount = formatMoney(invoice.totalSatang, locale);
-  const balance = invoice.totalSatang - invoice.paidSatang;
+  const credited = invoice.creditedSatang ?? 0;
+  const balance = invoice.totalSatang - invoice.paidSatang - credited;
   // A5 is short: a denser layout keeps the invoice on one page.
   const dense = size === 'a5';
 
@@ -83,12 +88,20 @@ export function InvoiceDocument({
     <>
       <style>{`@page { size: ${paper.page}; margin: ${dense ? '10mm' : '12mm'}; } @media print { .no-print { display: none !important; } body { background: #fff; } }`}</style>
       <article
-        className={cn('mx-auto flex flex-col bg-surface-raised text-ink shadow-sm print:shadow-none', dense ? 'gap-2 p-3' : 'gap-6 p-6')}
+        className={cn(
+          'mx-auto flex flex-col bg-surface-raised text-ink shadow-sm print:shadow-none',
+          dense ? 'gap-2 p-3' : 'gap-6 p-6',
+        )}
         style={{ width: `min(100%, ${paper.width})` }}
       >
         <header className="flex flex-wrap items-start justify-between gap-4 border-b border-line pb-4">
           <div className="flex flex-col">
-            <h1 className={cn(ts('headline-sm', locale), 'm-0')}>{both(invoice.buildingNameTh, invoice.buildingNameEn ?? invoice.buildingNameTh)}</h1>
+            <h1 className={cn(ts('headline-sm', locale), 'm-0')}>
+              {both(
+                invoice.buildingNameTh,
+                invoice.buildingNameEn ?? invoice.buildingNameTh,
+              )}
+            </h1>
             <span className="text-ink-muted">{p.title}</span>
           </div>
           <dl className="grid grid-cols-[auto_1fr] gap-x-4 gap-y-1 text-right">
@@ -118,7 +131,12 @@ export function InvoiceDocument({
           </p>
         </section>
 
-        <table className={cn('w-full border-collapse text-left', dense && '[&_td]:py-1 [&_th]:py-1')}>
+        <table
+          className={cn(
+            'w-full border-collapse text-left',
+            dense && '[&_td]:py-1 [&_th]:py-1',
+          )}
+        >
           <thead>
             <tr className="border-b border-line text-ink-muted">
               <th scope="col" className="py-2 font-normal">
@@ -134,9 +152,16 @@ export function InvoiceDocument({
               <tr key={line.id} className="border-b border-line">
                 <td className="py-2">
                   {both(line.labelTh, line.labelEn)}
-                  {line.meta.estimate === true ? <span className="text-ink-muted"> {m.billing.estimated}</span> : null}
+                  {line.meta.estimate === true ? (
+                    <span className="text-ink-muted">
+                      {' '}
+                      {m.billing.estimated}
+                    </span>
+                  ) : null}
                 </td>
-                <td className="py-2 text-right tabular-nums">{formatMoney(line.amountSatang, locale)}</td>
+                <td className="py-2 text-right tabular-nums">
+                  {formatMoney(line.amountSatang, locale)}
+                </td>
               </tr>
             ))}
           </tbody>
@@ -144,15 +169,25 @@ export function InvoiceDocument({
 
         <div className="flex flex-wrap items-end justify-between gap-4">
           <p className="text-3xl font-semibold tabular-nums">
-            <span className="text-base font-normal text-ink-muted">{p.total} </span>
+            <span className="text-base font-normal text-ink-muted">
+              {p.total}{' '}
+            </span>
             {amount}
           </p>
-          {balance > 0 && balance !== invoice.totalSatang ? (
-            <p className="tabular-nums text-ink-muted">
-              <span>{p.balance} </span>
-              {formatMoney(balance, locale)}
-            </p>
-          ) : null}
+          <div className="flex flex-col items-end gap-1 tabular-nums text-ink-muted">
+            {credited > 0 ? (
+              <p className="m-0">
+                <span>{p.credited} </span>
+                {formatMoney(-credited, locale)}
+              </p>
+            ) : null}
+            {balance > 0 && balance !== invoice.totalSatang ? (
+              <p className="m-0">
+                <span>{p.balance} </span>
+                {formatMoney(balance, locale)}
+              </p>
+            ) : null}
+          </div>
         </div>
 
         <section className="grid gap-4 md:grid-cols-2 print:grid-cols-2">
@@ -161,13 +196,19 @@ export function InvoiceDocument({
             {invoice.bankName || invoice.bankAccountMasked ? (
               <p>
                 <span className="text-ink-muted">{p.bank} </span>
-                <span>{[invoice.bankName, invoice.bankAccountMasked].filter(Boolean).join(' ')}</span>
+                <span>
+                  {[invoice.bankName, invoice.bankAccountMasked]
+                    .filter(Boolean)
+                    .join(' ')}
+                </span>
               </p>
             ) : null}
           </div>
           <div className="flex flex-col gap-2 rounded-sm border border-dashed border-line-strong p-3">
             <span className="font-semibold text-ink">{p.sampleQr}</span>
-            <span className="rounded-sm bg-surface-sunken px-2 py-1 text-sm text-danger">{p.qrBanner}</span>
+            <span className="rounded-sm bg-surface-sunken px-2 py-1 text-sm text-danger">
+              {p.qrBanner}
+            </span>
             <code className="break-all tabular-nums text-ink">{`RENTROLL-DEMO-${invoice.number}-${(invoice.totalSatang / 100).toFixed(2)}`}</code>
             <span className="text-sm text-ink-muted">{p.qrNote}</span>
           </div>

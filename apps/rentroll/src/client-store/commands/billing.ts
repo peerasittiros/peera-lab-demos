@@ -1,5 +1,6 @@
 import { z } from 'zod';
 import { addMonths, bangkokDate } from '@/src/domain/dates';
+import { balanceOf } from '../settlement';
 import { formatDocumentNumber, type YearStyle } from '@/src/domain/numbering';
 import { invoiceTotals, type InvoiceLineKind } from '@/src/domain/invoice';
 import { labelOf, missingReadings, planRoom } from '@/src/domain/billing-run';
@@ -10,7 +11,7 @@ import type { CommandContext, CommandResult } from './payments';
 
 /**
  * Billing run commands (SPEC §4 O10, O11). Generate, adjust a draft's lines, send, and void a draft. The owner does all
- * of these. A sent invoice is never changed; a correction is a credit note, which is not in this round.
+ * of these, and issue a credit note against a sent invoice. A sent invoice is never changed; a correction is a credit note.
  */
 
 const fail = (error: string): { ok: false; error: string } => ({
@@ -240,5 +241,50 @@ export function actVoidDraft(
   });
   return dispatched
     ? { ok: true, value: { number: invoice.number } }
+    : fail('billing.errors.saveFailed');
+}
+
+const creditNoteInput = z.object({
+  invoiceId: z.uuid(),
+  amountSatang: z.number().int().positive(),
+  reason: z.string().trim().min(1).max(200),
+});
+
+/**
+ * Issues a credit note against a sent invoice (SPEC §4 O11). The invoice keeps its numbers and lines; the credit takes
+ * money off what it still owes, and the note is numbered `CN-<invoice>-<n>`.
+ */
+export function actIssueCreditNote(
+  ctx: CommandContext,
+  input: z.input<typeof creditNoteInput>,
+): CommandResult<{ number: string }> {
+  if (!isOwner(ctx)) return fail('errors.forbidden');
+  const parsed = creditNoteInput.safeParse(input);
+  if (!parsed.success) return fail('billing.errors.creditInvalid');
+  const data = ctx.store.getState().data;
+  const invoice = data.invoice.find((i) => i.id === parsed.data.invoiceId);
+  if (!invoice) return fail('billing.errors.notFound');
+  if (invoice.status !== 'sent' && invoice.status !== 'partially_paid')
+    return fail('billing.errors.notSent');
+  if (parsed.data.amountSatang > balanceOf(data, invoice))
+    return fail('billing.errors.creditOverBalance');
+  const sequence =
+    data.credit_note.filter((c) => c.invoiceId === invoice.id).length + 1;
+  const number = `CN-${invoice.number}-${sequence}`;
+  const dispatched = ctx.store.dispatch({
+    id: newId(),
+    at: ctx.now().toISOString(),
+    role: ctx.role,
+    kind: 'credit_note.issue',
+    payload: {
+      creditNoteId: newId(),
+      invoiceId: invoice.id,
+      number,
+      amountSatang: parsed.data.amountSatang,
+      reason: parsed.data.reason,
+    },
+  });
+  return dispatched
+    ? { ok: true, value: { number } }
     : fail('billing.errors.saveFailed');
 }

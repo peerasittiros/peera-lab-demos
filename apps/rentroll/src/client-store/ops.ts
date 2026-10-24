@@ -1,4 +1,5 @@
 import type { Data, Role, Row, TableName } from './schema';
+import { balanceOf, creditedOn } from './settlement';
 
 /**
  * Visitor changes (SPEC §2.2). Each op is an event the visitor caused, with the results already worked out by the
@@ -281,6 +282,40 @@ export type ContractMoveOutOp = OpBase & {
   };
 };
 
+/** Edits a building's names, PromptPay ID and billing days. Bills already issued keep what they were issued with. */
+export type BuildingUpdateOp = OpBase & {
+  kind: 'building.update';
+  payload: {
+    buildingId: string;
+    nameTh: string;
+    nameEn: string | null;
+    promptpayId: string;
+    billingDay: number;
+    dueDay: number;
+  };
+};
+
+/** A new rate plan from `validFrom`. Bills generated before that date keep the plan they were generated with. */
+export type RatePlanAddOp = OpBase & {
+  kind: 'rate_plan.add';
+  payload: Omit<Row<'rate_plan'>, 'createdAt'>;
+};
+
+/**
+ * A credit note against a sent invoice. It takes `amountSatang` off what the invoice still owes; the invoice itself is
+ * not changed (SPEC §4 O11).
+ */
+export type CreditNoteIssueOp = OpBase & {
+  kind: 'credit_note.issue';
+  payload: {
+    creditNoteId: string;
+    invoiceId: string;
+    number: string;
+    amountSatang: number;
+    reason: string;
+  };
+};
+
 export type Op =
   | SlipSubmitOp
   | PaymentApproveOp
@@ -299,7 +334,10 @@ export type Op =
   | RoomMaintenanceOp
   | ContractNoticeOp
   | ContractMoveInOp
-  | ContractMoveOutOp;
+  | ContractMoveOutOp
+  | BuildingUpdateOp
+  | RatePlanAddOp
+  | CreditNoteIssueOp;
 
 export type OpKind = Op['kind'];
 
@@ -336,6 +374,30 @@ export function canApply(data: Data, op: Op): boolean {
     case 'payment.reject': {
       const payment = byId(data.payment, op.payload.paymentId);
       return payment?.status === 'pending_review';
+    }
+    case 'building.update':
+      return Boolean(byId(data.building, op.payload.buildingId));
+    case 'rate_plan.add':
+      return (
+        Boolean(byId(data.building, op.payload.buildingId)) &&
+        !byId(data.rate_plan, op.payload.id) &&
+        !data.rate_plan.some(
+          (p) =>
+            p.buildingId === op.payload.buildingId &&
+            p.validFrom === op.payload.validFrom,
+        )
+      );
+    case 'credit_note.issue': {
+      const invoice = byId(data.invoice, op.payload.invoiceId);
+      return (
+        Boolean(invoice) &&
+        (invoice!.status === 'sent' || invoice!.status === 'partially_paid') &&
+        Number.isInteger(op.payload.amountSatang) &&
+        op.payload.amountSatang > 0 &&
+        op.payload.amountSatang <= balanceOf(data, invoice!) &&
+        !byId(data.credit_note, op.payload.creditNoteId) &&
+        !data.credit_note.some((c) => c.number === op.payload.number)
+      );
     }
     case 'meter.read':
       return (
@@ -451,9 +513,10 @@ function settle(
     ]);
     const invoice = byId(next.invoice, allocation.invoiceId)!;
     const paid = invoice.paidSatang + allocation.amount;
+    const settled = paid + creditedOn(next, invoice.id) >= invoice.totalSatang;
     next = patchRow(next, 'invoice', invoice.id, {
       paidSatang: paid,
-      status: paid >= invoice.totalSatang ? 'paid' : 'partially_paid',
+      status: settled ? 'paid' : 'partially_paid',
     });
   }
   return next;
@@ -987,5 +1050,38 @@ export function apply(data: Data, op: Op): Data {
         rejectReason: op.payload.reason,
         reviewedBy: op.payload.reviewedBy,
       });
+    case 'building.update': {
+      const p = op.payload;
+      return patchRow(data, 'building', p.buildingId, {
+        nameTh: p.nameTh,
+        nameEn: p.nameEn,
+        promptpayId: p.promptpayId,
+        billingDay: p.billingDay,
+        dueDay: p.dueDay,
+      });
+    }
+    case 'rate_plan.add': {
+      const row: Row<'rate_plan'> = { ...op.payload, createdAt: op.at };
+      return replaceRows(data, 'rate_plan', [...data.rate_plan, row]);
+    }
+    case 'credit_note.issue': {
+      const p = op.payload;
+      const note: Row<'credit_note'> = {
+        id: p.creditNoteId,
+        invoiceId: p.invoiceId,
+        number: p.number,
+        amountSatang: p.amountSatang,
+        reason: p.reason,
+        createdAt: op.at,
+      };
+      const withNote = replaceRows(data, 'credit_note', [
+        ...data.credit_note,
+        note,
+      ]);
+      const invoice = byId(withNote.invoice, p.invoiceId)!;
+      return patchRow(withNote, 'invoice', invoice.id, {
+        status: balanceOf(withNote, invoice) <= 0 ? 'paid' : invoice.status,
+      });
+    }
   }
 }

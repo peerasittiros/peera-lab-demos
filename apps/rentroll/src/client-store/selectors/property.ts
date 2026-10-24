@@ -1,3 +1,4 @@
+import { balanceOf } from '../settlement';
 import { dayNumber } from '@/src/domain/dates';
 import { moveInInvoice } from '@/src/domain/move';
 import { moveOutSettlement } from '@/src/domain/move';
@@ -312,7 +313,7 @@ export function moveOutPreview(data: Data, input: MoveOutInput) {
         i.contractId === contract.id &&
         OPEN_INVOICE_STATUSES.includes(i.status),
     )
-    .reduce((sum, i) => sum + (i.totalSatang - i.paidSatang), 0);
+    .reduce((sum, i) => sum + balanceOf(data, i), 0);
   try {
     const result = moveOutSettlement({
       elec: {

@@ -1,3 +1,4 @@
+import { balanceOf } from '../settlement';
 import { isLiveContract } from '@/src/domain/property';
 import type { Op } from '../ops';
 import type { Data } from '../schema';
@@ -23,7 +24,7 @@ export function loadPayInvoice(data: Data, invoiceId: string) {
     roomNumber: room.number,
     buildingNameTh: building.nameTh,
     buildingNameEn: building.nameEn,
-    outstandingSatang: invoice.totalSatang - invoice.paidSatang,
+    outstandingSatang: balanceOf(data, invoice),
     pendingSlips: data.payment.filter(
       (p) => p.contractId === contract.id && p.status === 'pending_review',
     ).length,

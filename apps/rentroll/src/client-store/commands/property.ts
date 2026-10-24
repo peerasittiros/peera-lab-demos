@@ -1,8 +1,10 @@
 import { z } from 'zod';
 import { bangkokDate } from '@/src/domain/dates';
 import { daysLate } from '@/src/domain/late-fee';
+import { ratePlanOn } from '@/src/domain/property';
 import { canMove, type RepairStatus } from '@/src/domain/repair';
 import { newId } from '../ids';
+import { balanceOf } from '../settlement';
 import { liveContractOf } from '../selectors/property';
 import type { CommandContext, CommandResult } from './payments';
 
@@ -288,11 +290,103 @@ export function actSendReminder(
       messageId: newId(),
       invoiceId: invoice.id,
       daysOverdue: days,
-      outstandingSatang: invoice.totalSatang - invoice.paidSatang,
+      outstandingSatang: balanceOf(data, invoice),
       dueDate: invoice.dueDate,
     },
   });
   return ok
     ? { ok: true, value: { daysOverdue: days } }
     : fail('payments.errors.saveFailed');
+}
+
+const buildingInput = z.object({
+  buildingId: z.uuid(),
+  nameTh: z.string().trim().min(1).max(120),
+  nameEn: z.string().trim().max(120).nullable(),
+  promptpayId: z.string().trim().min(1).max(40),
+  billingDay: z.number().int().min(1).max(28),
+  dueDay: z.number().int().min(1).max(28),
+});
+
+/** Edits a building's names, PromptPay ID and billing days (SPEC §4 O5). Owner only. */
+export function actUpdateBuilding(
+  ctx: CommandContext,
+  input: z.input<typeof buildingInput>,
+): CommandResult<{ buildingId: string }> {
+  if (!isOwner(ctx)) return fail('errors.forbidden');
+  const parsed = buildingInput.safeParse(input);
+  if (!parsed.success) return fail('property.errors.invalid');
+  if (
+    !ctx.store
+      .getState()
+      .data.building.some((b) => b.id === parsed.data.buildingId)
+  )
+    return fail('property.errors.notFound');
+  const ok = ctx.store.dispatch({
+    id: newId(),
+    at: ctx.now().toISOString(),
+    role: ctx.role,
+    kind: 'building.update',
+    payload: parsed.data,
+  });
+  return ok
+    ? { ok: true, value: { buildingId: parsed.data.buildingId } }
+    : fail('property.errors.saveFailed');
+}
+
+const ratePlanInput = z.object({
+  buildingId: z.uuid(),
+  validFrom: z.string().regex(/^\d{4}-\d{2}-\d{2}$/),
+  elecRateSatang: z.number().int().min(0),
+  elecMinSatang: z.number().int().min(0),
+  waterMode: z.enum(['per_unit', 'per_person']),
+  waterRateSatang: z.number().int().min(0),
+  waterMinSatang: z.number().int().min(0),
+  waterPerPersonSatang: z.number().int().min(0),
+  commonFeeSatang: z.number().int().min(0),
+});
+
+/**
+ * Adds a rate plan that starts on `validFrom` (SPEC §4 O5). It can't start before today, and two plans in a building
+ * can't start the same day. Bills generated earlier keep the plan they were generated with.
+ */
+export function actAddRatePlan(
+  ctx: CommandContext,
+  input: z.input<typeof ratePlanInput>,
+): CommandResult<{ planId: string }> {
+  if (!isOwner(ctx)) return fail('errors.forbidden');
+  const parsed = ratePlanInput.safeParse(input);
+  if (!parsed.success) return fail('property.errors.invalid');
+  const data = ctx.store.getState().data;
+  const today = bangkokDate(ctx.now());
+  if (!data.building.some((b) => b.id === parsed.data.buildingId))
+    return fail('property.errors.notFound');
+  if (parsed.data.validFrom < today) return fail('property.errors.pastDate');
+  const plans = data.rate_plan.filter(
+    (p) => p.buildingId === parsed.data.buildingId,
+  );
+  if (plans.some((p) => p.validFrom === parsed.data.validFrom))
+    return fail('property.errors.ratePlanDuplicate');
+  // The late-fee rule carries over from the plan in force today, so a rate change never changes how late fees work.
+  const current = ratePlanOn(plans, today);
+  const lateFeeRule = current?.lateFeeRule ?? {
+    kind: 'per_day' as const,
+    amountSatang: 0,
+    capSatang: 0,
+  };
+  const planId = newId();
+  const ok = ctx.store.dispatch({
+    id: newId(),
+    at: ctx.now().toISOString(),
+    role: ctx.role,
+    kind: 'rate_plan.add',
+    payload: {
+      ...parsed.data,
+      id: planId,
+      lateFeeRule,
+    },
+  });
+  return ok
+    ? { ok: true, value: { planId } }
+    : fail('property.errors.saveFailed');
 }

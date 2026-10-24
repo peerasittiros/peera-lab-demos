@@ -1,3 +1,4 @@
+import { balanceOf, creditedOn } from '../settlement';
 import { ratePlanOn } from '@/src/domain/property';
 import { periodEnd } from '@/src/domain/dates';
 import type { BillingRoom } from '@/src/domain/billing-run';
@@ -94,10 +95,7 @@ export function billingPlan(
         internet: extras.internet ?? 0,
         electricity: electricityByRoom.get(r.id) ?? null,
         water: waterByRoom.get(r.id) ?? null,
-        previousBalance: open.reduce(
-          (sum, i) => sum + (i.totalSatang - i.paidSatang),
-          0,
-        ),
+        previousBalance: open.reduce((sum, i) => sum + balanceOf(data, i), 0),
         repairCharges: doneRepairs
           .filter(
             (t) =>
@@ -112,7 +110,7 @@ export function billingPlan(
           .map((i) => ({
             id: i.id,
             dueDate: i.dueDate,
-            outstanding: i.totalSatang - i.paidSatang,
+            outstanding: balanceOf(data, i),
             alreadyCharged: chargedFor.has(i.id),
           })),
         existingInvoiceId: existing?.id ?? null,
@@ -172,6 +170,7 @@ export function invoiceList(data: Data) {
         type: i.type,
         totalSatang: i.totalSatang,
         paidSatang: i.paidSatang,
+        balanceSatang: balanceOf(data, i),
         dueDate: i.dueDate,
         publicToken: i.publicToken,
         roomNumber: room?.number ?? '',
@@ -206,6 +205,7 @@ export function invoiceDocument(
     dueDate: invoice.dueDate,
     totalSatang: invoice.totalSatang,
     paidSatang: invoice.paidSatang,
+    creditedSatang: creditedOn(data, invoice.id),
     buildingNameTh: building.nameTh,
     buildingNameEn: building.nameEn,
     bankName: building.bankName,
