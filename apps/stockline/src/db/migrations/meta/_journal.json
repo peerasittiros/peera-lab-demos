@@ -15,6 +15,13 @@
       "when": 1792677814039,
       "tag": "0001_ledger_guards_and_clone",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1793090000000,
+      "tag": "0002_record_movement",
+      "breakpoints": true
     }
   ]
 }
