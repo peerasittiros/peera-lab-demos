@@ -7,6 +7,14 @@ export const en = defineMessages()({
   },
   app: { name: 'Stockline', sampleShop: 'Sample shop', shopLogo: 'Shop logo' },
   roles: { owner: 'Owner', staff: 'Staff' },
+  account: {
+    menu: 'Account',
+    switchUser: 'Switch user',
+    demo: 'Demo · sample data',
+    // Each language in its own name, the same in both files.
+    thai: 'ไทย',
+    english: 'English',
+  },
   nav: {
     label: 'Main navigation',
     more: 'More',

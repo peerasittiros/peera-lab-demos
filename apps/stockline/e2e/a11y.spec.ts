@@ -104,7 +104,9 @@ test('framed by the website without cookies, the session travels in ?sid and wri
   await expect(
     frame.locator('section[aria-labelledby="recent-title"]'),
   ).toBeVisible();
+  // Framed by the website, the account menu offers to open the demo in its own tab.
+  await frame.getByRole('button', { name: /^Account: / }).click();
   await expect(
-    frame.getByRole('link', { name: 'Open in new tab' }),
+    frame.getByRole('menuitem', { name: 'Open in new tab' }),
   ).toBeVisible();
 });

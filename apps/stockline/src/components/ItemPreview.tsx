@@ -42,7 +42,7 @@ export function ItemPreview({ item, locale, role }: { item: ItemView; locale: Lo
   return (
     <aside
       aria-label={nameIn(item, locale)}
-      className="sticky top-[4.5rem] flex flex-col gap-5 rounded-md border border-line bg-surface-raised p-5"
+      className="sticky top-8 flex flex-col gap-5 rounded-md border border-line bg-surface-raised p-5"
     >
       <MovePanelHeader item={item} locale={locale} />
       <dl className="m-0 grid grid-cols-2 gap-x-4 gap-y-3">

@@ -7,6 +7,14 @@ export const th: typeof en = {
   },
   app: { name: 'Stockline', sampleShop: 'ร้านตัวอย่าง', shopLogo: 'โลโก้ร้าน' },
   roles: { owner: 'เจ้าของร้าน', staff: 'พนักงาน' },
+  account: {
+    menu: 'บัญชี',
+    switchUser: 'สลับผู้ใช้',
+    demo: 'เดโม · ข้อมูลตัวอย่าง',
+    // Each language in its own name, the same in both files.
+    thai: 'ไทย',
+    english: 'English',
+  },
   nav: {
     label: 'เมนูหลัก',
     more: 'เพิ่มเติม',

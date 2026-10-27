@@ -203,7 +203,7 @@ export function QuickMove({ locale }: { locale: Locale }) {
       {/* On phones the search and scan bar stays under the top bar while the list scrolls. */}
       <form
         role="search"
-        className="sticky top-11 z-10 -mx-4 flex items-end gap-2 bg-surface px-4 py-2 md:static md:mx-0 md:bg-transparent md:p-0"
+        className="sticky top-0 z-10 -mx-4 flex items-end gap-2 bg-surface px-4 py-2 md:static md:mx-0 md:bg-transparent md:p-0"
         onSubmit={(event) => {
           event.preventDefault();
           const first = results[0];
@@ -338,7 +338,7 @@ export function QuickMove({ locale }: { locale: Locale }) {
       {panelItem ? (
         <aside
           aria-label={m.quickMove.panelLabel}
-          className="sticky top-[4.5rem] flex flex-col gap-6 rounded-md border border-line bg-surface-raised p-5"
+          className="sticky top-8 flex flex-col gap-6 rounded-md border border-line bg-surface-raised p-5"
         >
           <div>
             <MovePanelHeader item={panelItem} locale={locale} />

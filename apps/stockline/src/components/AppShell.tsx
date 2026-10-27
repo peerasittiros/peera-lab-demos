@@ -4,11 +4,12 @@ import { useRole, useRoleControl } from '../client-store/role';
 import {
   CoachMarks,
   ContactLink,
-  DemoBar,
   kitStrings,
+  newTabHref,
   ResetDialog,
   SampleDataNotice,
   useDemoHref,
+  useEmbedded,
 } from '@peera/demo-kit';
 import { LocaleSwitch, type Locale } from '@peera/i18n';
 import {
@@ -28,6 +29,7 @@ import {
   ClipboardCheck,
   ClipboardList,
   Ellipsis,
+  ExternalLink,
   FileUp,
   History,
   LayoutDashboard,
@@ -45,6 +47,7 @@ import { usePathname, useRouter } from 'next/navigation';
 import { useState, useSyncExternalStore, type ReactNode } from 'react';
 import { useStoreInstance, useStoreState } from '../client-store/hooks';
 import { translator } from '../i18n';
+import { AccountMenu } from './AccountMenu';
 import { ShopBadge } from './ShopBadge';
 import { ThemeSwitch } from './ThemeSwitch';
 
@@ -124,6 +127,7 @@ export function AppShell({ locale, siteUrl, children }: { locale: Locale; siteUr
   const store = useStoreInstance();
   const { status: storeStatus, ledger, variant } = useStoreState();
   const storeFailed = storeStatus === 'error' && !ledger;
+  const embedded = useEmbedded();
 
   const toggleCollapsed = () => writeCollapsed(!collapsed);
 
@@ -162,23 +166,12 @@ export function AppShell({ locale, siteUrl, children }: { locale: Locale; siteUr
       >
         {m.nav.skip}
       </a>
-      <DemoBar
-        productName={m.app.name}
-        locale={locale}
-        roles={[
-          { value: 'owner', label: m.roles.owner },
-          { value: 'staff', label: m.roles.staff },
-        ]}
-        role={role}
-        onRoleChange={changeRole}
-        onReset={reset}
-        className="sticky top-0 z-30 print:hidden"
-      />
+      {/* No demo bar over the app: the demo's controls are in the account menu (sidebar) and "More" (phones). */}
       <div className="flex min-h-0 flex-1">
         <aside
           className={cn(
             // An icon rail at 768–1023, the full sidebar from 1024 (collapsible there).
-            'sticky top-11 hidden h-[calc(100dvh-2.75rem)] shrink-0 flex-col border-r border-line bg-surface-raised md:flex md:top-10 md:h-[calc(100dvh-2.5rem)] print:hidden',
+            'sticky top-0 hidden h-dvh shrink-0 flex-col border-r border-line bg-surface-raised md:flex print:hidden',
             collapsed ? 'w-[4.5rem]' : 'w-[4.5rem] lg:w-60',
           )}
         >
@@ -225,14 +218,21 @@ export function AppShell({ locale, siteUrl, children }: { locale: Locale; siteUr
               </Link>
             ))}
           </nav>
-          <div className="hidden border-t border-line p-3 lg:block">
+          <div className="grid gap-1 border-t border-line p-3">
+            <AccountMenu
+              locale={locale}
+              role={role}
+              compact={collapsed}
+              onRoleChange={changeRole}
+              onReset={() => setResetOpen(true)}
+            />
             <button
               type="button"
               onClick={toggleCollapsed}
               aria-label={collapsed ? m.nav.expand : m.nav.collapse}
               aria-expanded={!collapsed}
               className={cn(
-                'flex min-h-10 w-full items-center gap-3 rounded-sm px-3 text-ink-muted hover:bg-surface-sunken hover:text-ink',
+                'hidden min-h-10 w-full items-center gap-3 rounded-sm px-3 text-ink-muted hover:bg-surface-sunken hover:text-ink lg:flex',
                 collapsed && 'justify-center px-0',
                 focusRing,
               )}
@@ -412,6 +412,20 @@ export function AppShell({ locale, siteUrl, children }: { locale: Locale; siteUr
               <RotateCcw aria-hidden size={16} strokeWidth={1.75} />
               {kitStrings[locale].reset}
             </Button>
+            {embedded ? (
+              <Button
+                locale={locale}
+                variant="ghost"
+                className="justify-start"
+                onClick={() => {
+                  const theme = document.documentElement.dataset.theme === 'dark' ? 'dark' : 'light';
+                  window.open(newTabHref(window.location.href, locale, theme), '_blank', 'noopener');
+                }}
+              >
+                <ExternalLink aria-hidden size={16} strokeWidth={1.75} />
+                {kitStrings[locale].openInNewTab}
+              </Button>
+            ) : null}
           </section>
         </SheetContent>
       </Sheet>

@@ -20,21 +20,22 @@ const roleLabel = {
   en: { owner: 'Owner', staff: 'Staff' },
   th: { owner: 'เจ้าของร้าน', staff: 'พนักงาน' },
 };
-const roleButton = { en: /Role: /, th: /บทบาท: / };
+// The account menu at the foot of the sidebar (desktop layout): "Account: <name>, <role>".
+const accountButton = { en: /^Account: /, th: /^บัญชี: / };
 
-/** Switches the demo role from the DemoBar (desktop layout) and waits for the role's landing page. */
+/** Switches user (the demo role) from the account menu (desktop layout) and waits for the role's landing page. */
 export async function setRole(
   page: Page,
   role: 'owner' | 'staff',
   locale: 'en' | 'th' = 'en',
 ) {
-  await page.getByRole('button', { name: roleButton[locale] }).click();
+  await page.getByRole('button', { name: accountButton[locale] }).click();
   await page
-    .getByRole('menuitemradio', { name: roleLabel[locale][role] })
+    .getByRole('menuitemradio', { name: new RegExp(`· ${roleLabel[locale][role]}$`) })
     .click();
   await expect(
     page.getByRole('button', {
-      name: new RegExp(`${roleLabel[locale][role]}`),
+      name: new RegExp(`, ${roleLabel[locale][role]}$`),
     }),
   ).toBeVisible();
   await page.waitForURL(
