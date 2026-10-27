@@ -10,7 +10,6 @@ import type { ReactNode } from 'react';
 import { messages } from '@/messages';
 import { AppShell } from '@/src/components/AppShell';
 import { SnapshotPreload } from '@/src/components/SnapshotPreload';
-import { env } from '@/src/env';
 import { StoreProvider } from '@/src/client-store/hooks';
 import { RoleProvider } from '@/src/client-store/role';
 import { fontVariables } from '@/src/theme/fonts';
@@ -64,7 +63,7 @@ export default async function LocaleLayout({
             <ToastProvider locale={locale}>
               <RoleProvider>
                 <StoreProvider>
-                  <AppShell locale={locale} siteUrl={env.PEERA_LAB_URL}>
+                  <AppShell locale={locale}>
                     {children}
                   </AppShell>
                 </StoreProvider>

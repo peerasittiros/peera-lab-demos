@@ -3,11 +3,9 @@
 import { useRole, useRoleControl } from '../client-store/role';
 import {
   CoachMarks,
-  ContactLink,
   kitStrings,
   newTabHref,
   ResetDialog,
-  SampleDataNotice,
   useDemoHref,
   useEmbedded,
 } from '@peera/demo-kit';
@@ -111,7 +109,7 @@ function subscribeCollapsed(onChange: () => void) {
   };
 }
 
-export function AppShell({ locale, siteUrl, children }: { locale: Locale; siteUrl: string; children: ReactNode }) {
+export function AppShell({ locale, children }: { locale: Locale; children: ReactNode }) {
   const role = useRole();
   const { m } = translator(locale);
   const router = useRouter();
@@ -253,8 +251,9 @@ export function AppShell({ locale, siteUrl, children }: { locale: Locale; siteUr
           <main
             id="main"
             tabIndex={-1}
-            // At least a screen tall: the footer starts below the fold, so loading rows never push it (no layout shift).
-            className="mx-auto min-h-dvh w-full max-w-[80rem] flex-1 px-4 pt-5 pb-8 outline-none md:px-8 md:pt-8"
+            // No footer, as in a real app (the sample-data note and contact link were demo-only). On phones the bottom
+            // padding keeps the last row clear of the tab bar.
+            className="mx-auto w-full max-w-[80rem] flex-1 px-4 pt-5 pb-24 outline-none md:px-8 md:pt-8 md:pb-8"
           >
             <ShopBadge locale={locale} className="mb-5 md:hidden" />
             {/* The tour is a card in the flow, so it never covers a list row (ux-v2 §3). */}
@@ -283,10 +282,6 @@ export function AppShell({ locale, siteUrl, children }: { locale: Locale; siteUr
               children
             )}
           </main>
-          <footer className="mx-auto flex print:hidden w-full max-w-[80rem] flex-wrap items-center justify-between gap-x-6 gap-y-1 border-t border-line px-4 pt-3 pb-24 md:px-8 md:pb-6">
-            <SampleDataNotice locale={locale} />
-            <ContactLink locale={locale} siteUrl={siteUrl} />
-          </footer>
         </div>
       </div>
 
