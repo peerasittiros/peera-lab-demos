@@ -1,0 +1,11 @@
+# What `vercel deploy` from this root leaves out. Vercel builds from source, so local caches, build output and test
+# results are never needed (and the caches pass the 100 MB file limit). Local env files stay local.
+.turbo
+**/.turbo
+**/.next
+**/node_modules
+**/test-results
+**/playwright-report
+**/coverage
+.env*
+**/.env*
