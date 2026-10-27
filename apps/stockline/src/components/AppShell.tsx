@@ -45,9 +45,15 @@ import { usePathname, useRouter } from 'next/navigation';
 import { useState, useSyncExternalStore, type ReactNode } from 'react';
 import { useStoreInstance, useStoreState } from '../client-store/hooks';
 import { translator } from '../i18n';
-import { AccountMenu } from './AccountMenu';
+import dynamic from 'next/dynamic';
 import { ShopBadge } from './ShopBadge';
 import { ThemeSwitch } from './ThemeSwitch';
+
+// Not needed for the first paint (a menu at the sidebar foot): its own chunk, loaded after hydration.
+const AccountMenu = dynamic(
+  () => import('./AccountMenu').then((mod) => mod.AccountMenu),
+  { ssr: false },
+);
 
 type NavKey =
   | 'quickMove'
@@ -109,7 +115,13 @@ function subscribeCollapsed(onChange: () => void) {
   };
 }
 
-export function AppShell({ locale, children }: { locale: Locale; children: ReactNode }) {
+export function AppShell({
+  locale,
+  children,
+}: {
+  locale: Locale;
+  children: ReactNode;
+}) {
   const role = useRole();
   const { m } = translator(locale);
   const router = useRouter();
@@ -153,7 +165,10 @@ export function AppShell({ locale, children }: { locale: Locale; children: React
   };
 
   return (
-    <div lang={locale} className="flex min-h-dvh flex-col bg-surface text-ink md:bg-surface-tint">
+    <div
+      lang={locale}
+      className="flex min-h-dvh flex-col bg-surface text-ink md:bg-surface-tint"
+    >
       <a
         href="#main"
         className={cn(
@@ -198,7 +213,9 @@ export function AppShell({ locale, children }: { locale: Locale; children: React
                   ts('ui', locale),
                   'group relative flex min-h-10 items-center gap-3 rounded-sm px-3 text-ink-muted hover:bg-surface-sunken hover:text-ink',
                   'aria-[current=page]:bg-primary-soft aria-[current=page]:text-primary',
-                  collapsed ? 'justify-center px-0' : 'max-lg:justify-center max-lg:px-0',
+                  collapsed
+                    ? 'justify-center px-0'
+                    : 'max-lg:justify-center max-lg:px-0',
                   focusRing,
                 )}
               >
@@ -212,7 +229,9 @@ export function AppShell({ locale, children }: { locale: Locale; children: React
                   strokeWidth={1.75}
                   className="shrink-0"
                 />
-                {collapsed ? null : <span className="hidden lg:inline">{m.nav[key]}</span>}
+                {collapsed ? null : (
+                  <span className="hidden lg:inline">{m.nav[key]}</span>
+                )}
               </Link>
             ))}
           </nav>
@@ -413,8 +432,15 @@ export function AppShell({ locale, children }: { locale: Locale; children: React
                 variant="ghost"
                 className="justify-start"
                 onClick={() => {
-                  const theme = document.documentElement.dataset.theme === 'dark' ? 'dark' : 'light';
-                  window.open(newTabHref(window.location.href, locale, theme), '_blank', 'noopener');
+                  const theme =
+                    document.documentElement.dataset.theme === 'dark'
+                      ? 'dark'
+                      : 'light';
+                  window.open(
+                    newTabHref(window.location.href, locale, theme),
+                    '_blank',
+                    'noopener',
+                  );
                 }}
               >
                 <ExternalLink aria-hidden size={16} strokeWidth={1.75} />

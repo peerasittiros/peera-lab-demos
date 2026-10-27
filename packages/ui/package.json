@@ -3,6 +3,10 @@
   "version": "0.0.0",
   "private": true,
   "type": "module",
+  "sideEffects": [
+    "*.css",
+    "./src/test-setup.ts"
+  ],
   "exports": {
     ".": "./src/index.ts",
     "./ThemeScript": "./src/ThemeScript.tsx",

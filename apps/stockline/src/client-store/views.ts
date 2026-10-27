@@ -11,6 +11,10 @@ import { buildReorderList } from '../domain/reorder';
 const SEARCH_LIMIT = 20;
 const STATUS_ORDER = { out: 0, low: 1, ok: 2 } as const;
 
+// One collator for every Thai sort: localeCompare with a locale builds a new Intl.Collator on each comparison, which
+// made sorting the item list the slowest step of a page load on phones.
+const thai = new Intl.Collator('th');
+
 export type SupplierView = {
   id: string;
   name: string;
@@ -93,7 +97,7 @@ export function itemViews(
       }
       return view;
     })
-    .sort((a, b) => a.nameTh.localeCompare(b.nameTh, 'th'));
+    .sort((a, b) => thai.compare(a.nameTh, b.nameTh));
 }
 
 /** Active suppliers, by name. */
@@ -108,7 +112,7 @@ export function supplierViews(ledger: Ledger): SupplierView[] {
       leadTimeDays: Number(row.leadTimeDays),
       note: str(row.note),
     }))
-    .sort((a, b) => a.name.localeCompare(b.name, 'th'));
+    .sort((a, b) => thai.compare(a.name, b.name));
 }
 
 export function categoryViews(ledger: Ledger): CategoryView[] {
@@ -119,7 +123,7 @@ export function categoryViews(ledger: Ledger): CategoryView[] {
       nameEn: str(row.nameEn),
       sort: Number(row.sort ?? 0),
     }))
-    .sort((a, b) => a.sort - b.sort || a.nameTh.localeCompare(b.nameTh, 'th'));
+    .sort((a, b) => a.sort - b.sort || thai.compare(a.nameTh, b.nameTh));
 }
 
 export function unitViews(ledger: Ledger): UnitView[] {
@@ -130,7 +134,7 @@ export function unitViews(ledger: Ledger): UnitView[] {
       nameEn: str(row.nameEn),
       symbol: String(row.symbol),
     }))
-    .sort((a, b) => a.nameTh.localeCompare(b.nameTh, 'th'));
+    .sort((a, b) => thai.compare(a.nameTh, b.nameTh));
 }
 
 /**
@@ -160,8 +164,7 @@ export function searchViews(
     .map((item) => ({ item, rank: rank(item) }))
     .filter((entry) => entry.rank < 3)
     .sort(
-      (a, b) =>
-        a.rank - b.rank || a.item.nameTh.localeCompare(b.item.nameTh, 'th'),
+      (a, b) => a.rank - b.rank || thai.compare(a.item.nameTh, b.item.nameTh),
     )
     .slice(0, limit)
     .map((entry) => entry.item);
@@ -174,7 +177,7 @@ export function lowViews(items: ItemView[]): ItemView[] {
     .sort(
       (a, b) =>
         STATUS_ORDER[a.status] - STATUS_ORDER[b.status] ||
-        a.nameTh.localeCompare(b.nameTh, 'th'),
+        thai.compare(a.nameTh, b.nameTh),
     );
 }
 

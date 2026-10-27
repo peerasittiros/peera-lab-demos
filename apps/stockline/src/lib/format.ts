@@ -1,5 +1,8 @@
 import { formatNumber, type Locale } from '@peera/i18n';
 
+// Hoisted, so the shared formatter cache finds it by identity.
+const QTY: Intl.NumberFormatOptions = { maximumFractionDigits: 3 };
+
 export type UnitLike = {
   nameTh: string;
   nameEn?: string | null;
@@ -36,16 +39,14 @@ export function formatQty(
   unit: UnitLike | null | undefined,
   locale: Locale,
 ): string {
-  const number = formatNumber(quantity, locale, { maximumFractionDigits: 3 });
+  const number = formatNumber(quantity, locale, QTY);
   const name = unitName(unit, locale, quantity);
   return name ? `${number} ${name}` : number;
 }
 
 /** A signed quantity for the ledger: "+24", "−6" (true minus sign). */
 export function formatSigned(quantity: number, locale: Locale): string {
-  const number = formatNumber(Math.abs(quantity), locale, {
-    maximumFractionDigits: 3,
-  });
+  const number = formatNumber(Math.abs(quantity), locale, QTY);
   return quantity > 0 ? `+${number}` : quantity < 0 ? `−${number}` : number;
 }
 

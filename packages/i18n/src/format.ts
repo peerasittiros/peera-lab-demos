@@ -12,9 +12,26 @@ const numberFormats = new Map<string, Intl.NumberFormat>();
 const dateFormats = new Map<string, Intl.DateTimeFormat>();
 const relativeFormats = new Map<string, Intl.RelativeTimeFormat>();
 
+// Options objects a caller hoists are found by identity, before a key string is built.
+const byOptions = new WeakMap<object, Map<string, Intl.NumberFormat>>();
+const NO_OPTIONS: Intl.NumberFormatOptions = {};
+
 function numberFormat(
   locale: string,
-  options: Intl.NumberFormatOptions = {},
+  options: Intl.NumberFormatOptions = NO_OPTIONS,
+): Intl.NumberFormat {
+  const known = byOptions.get(options)?.get(locale);
+  if (known) return known;
+  const format = numberFormatByKey(locale, options);
+  let perLocale = byOptions.get(options);
+  if (!perLocale) byOptions.set(options, (perLocale = new Map()));
+  perLocale.set(locale, format);
+  return format;
+}
+
+function numberFormatByKey(
+  locale: string,
+  options: Intl.NumberFormatOptions,
 ): Intl.NumberFormat {
   const key = `${locale}|${JSON.stringify(options)}`;
   let format = numberFormats.get(key);
@@ -47,6 +64,15 @@ function relativeFormat(locale: string): Intl.RelativeTimeFormat {
   return format;
 }
 
+const MONEY_PROSE: Intl.NumberFormatOptions = { maximumFractionDigits: 0 };
+const MONEY_TABLE: Intl.NumberFormatOptions = {
+  style: 'currency',
+  currency: 'THB',
+  currencyDisplay: 'narrowSymbol',
+  minimumFractionDigits: 2,
+  maximumFractionDigits: 2,
+};
+
 export type MoneyStyle = 'table' | 'prose';
 
 /** Amount is accepted in satang; output is locale-aware and always uses Arabic digits. */
@@ -59,19 +85,14 @@ export function formatMoney(
   if (style === 'prose') {
     const formatted = numberFormat(
       locale === 'th' ? 'th-TH-u-nu-latn' : 'en-GB',
-      {
-        maximumFractionDigits: 0,
-      },
+      MONEY_PROSE,
     ).format(amount);
     return locale === 'th' ? `${formatted} บาท` : `THB ${formatted}`;
   }
-  return numberFormat(locale === 'th' ? 'th-TH-u-nu-latn' : 'en-GB', {
-    style: 'currency',
-    currency: 'THB',
-    currencyDisplay: 'narrowSymbol',
-    minimumFractionDigits: 2,
-    maximumFractionDigits: 2,
-  }).format(amount);
+  return numberFormat(
+    locale === 'th' ? 'th-TH-u-nu-latn' : 'en-GB',
+    MONEY_TABLE,
+  ).format(amount);
 }
 
 export function formatDate(

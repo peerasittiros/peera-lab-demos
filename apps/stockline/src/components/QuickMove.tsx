@@ -21,16 +21,31 @@ import {
   useStoreInstance,
   useStoreState,
 } from '../client-store/hooks';
-import { lowViews, movementViews, recentViews, searchViews } from '../client-store/views';
+import {
+  lowViews,
+  movementViews,
+  recentViews,
+  searchViews,
+} from '../client-store/views';
 import type { ItemView } from '../domain/read-models';
 import { nameIn, translator } from '../i18n';
 import { formatQty, formatSigned, unitName } from '../lib/format';
 import { AppLink } from './AppLink';
 import { ItemRowContent } from './ItemRow';
 import { MovementCards } from './Movements';
-import { MoveForm, MovePanelHeader, MoveSheet, type SavedMovement } from './MoveSheet';
-import { ScanOverlay } from './ScanOverlay';
+import {
+  MoveForm,
+  MovePanelHeader,
+  MoveSheet,
+  type SavedMovement,
+} from './MoveSheet';
+import dynamic from 'next/dynamic';
 
+// The camera scanner opens on demand: its own chunk, loaded after hydration.
+const ScanOverlay = dynamic(
+  () => import('./ScanOverlay').then((mod) => mod.ScanOverlay),
+  { ssr: false },
+);
 
 const RECENT_KEY = 'stockline:recent';
 const RECENT_LIMIT = 8;
@@ -69,7 +84,9 @@ export function QuickMove({ locale }: { locale: Locale }) {
   const desktop = useMedia('(min-width: 1024px)');
   const [formKey, setFormKey] = useState(0);
   // The row just saved flashes once; the count restarts the flash on a second save.
-  const [flash, setFlash] = useState<{ id: string; count: number } | null>(null);
+  const [flash, setFlash] = useState<{ id: string; count: number } | null>(
+    null,
+  );
   const views = useItemViews(role);
   const [query, setQuery] = useState('');
   const [searchTerm, setSearchTerm] = useState('');
@@ -125,7 +142,10 @@ export function QuickMove({ locale }: { locale: Locale }) {
     }
     const item = views.find((entry) => entry.id === change.itemId);
     if (desktop) setFormKey((key) => key + 1);
-    setFlash((current) => ({ id: change.itemId, count: (current?.count ?? 0) + 1 }));
+    setFlash((current) => ({
+      id: change.itemId,
+      count: (current?.count ?? 0) + 1,
+    }));
     setRecentIds((ids) => {
       const next = [change.itemId, ...ids.filter((id) => id !== change.itemId)];
       writeRecent(next);
@@ -195,144 +215,147 @@ export function QuickMove({ locale }: { locale: Locale }) {
   // On desktop the panel always shows an item: the one picked, else the first in the list.
   const panelItem = desktop ? (selected ?? list[0] ?? null) : null;
   const panelMoves =
-    panelItem && ledger ? movementViews(ledger, role, { itemId: panelItem.id, limit: 5 }) : [];
+    panelItem && ledger
+      ? movementViews(ledger, role, { itemId: panelItem.id, limit: 5 })
+      : [];
 
   return (
     <div className="flex flex-col gap-5 lg:grid lg:grid-cols-[minmax(0,1fr)_minmax(22rem,26rem)] lg:items-start lg:gap-6">
       <div className="flex min-w-0 flex-col gap-5">
-      {/* On phones the search and scan bar stays under the top bar while the list scrolls. */}
-      <form
-        role="search"
-        className="sticky top-0 z-10 -mx-4 flex items-end gap-2 bg-surface px-4 py-2 md:static md:mx-0 md:bg-transparent md:p-0"
-        onSubmit={(event) => {
-          event.preventDefault();
-          const first = results[0];
-          if (first) open(first);
-        }}
-      >
-        <label className="flex min-w-0 flex-1 flex-col gap-1.5">
-          <span className={cn(ts('ui', locale), 'text-ink')}>
-            {m.quickMove.searchLabel}
-          </span>
-          <span className="relative">
-            <Search
-              aria-hidden
-              size={20}
-              strokeWidth={1.75}
-              className="pointer-events-none absolute top-1/2 left-3 -translate-y-1/2 text-ink-muted"
-            />
-            <Input
-              ref={inputRef}
-              locale={locale}
-              type="search"
-              inputMode="search"
-              autoComplete="off"
-              enterKeyHint="search"
-              value={query}
-              placeholder={m.quickMove.searchPlaceholder}
-              onChange={(event) => setQuery(event.target.value)}
-              className="min-h-12 pr-11 pl-10"
-            />
-            {query ? (
-              <button
-                type="button"
-                aria-label={m.common.clear}
-                onClick={() => {
-                  setQuery('');
-                  inputRef.current?.focus();
-                }}
-                className={cn(
-                  'absolute top-1/2 right-1 inline-flex min-h-10 min-w-10 -translate-y-1/2 items-center justify-center rounded-sm text-ink-muted hover:text-ink',
-                  focusRing,
-                )}
-              >
-                <X aria-hidden size={18} strokeWidth={1.75} />
-              </button>
-            ) : null}
-          </span>
-        </label>
-        <Button
-          locale={locale}
-          size="lg"
-          variant="secondary"
-          onClick={() => {
-            setScanKey((key) => key + 1);
-            setScanOpen(true);
+        {/* On phones the search and scan bar stays under the top bar while the list scrolls. */}
+        <form
+          role="search"
+          className="sticky top-0 z-10 -mx-4 flex items-end gap-2 bg-surface px-4 py-2 md:static md:mx-0 md:bg-transparent md:p-0"
+          onSubmit={(event) => {
+            event.preventDefault();
+            const first = results[0];
+            if (first) open(first);
           }}
         >
-          <ScanLine aria-hidden size={20} strokeWidth={1.75} />
-          {m.quickMove.scan}
-        </Button>
-      </form>
+          <label className="flex min-w-0 flex-1 flex-col gap-1.5">
+            <span className={cn(ts('ui', locale), 'text-ink')}>
+              {m.quickMove.searchLabel}
+            </span>
+            <span className="relative">
+              <Search
+                aria-hidden
+                size={20}
+                strokeWidth={1.75}
+                className="pointer-events-none absolute top-1/2 left-3 -translate-y-1/2 text-ink-muted"
+              />
+              <Input
+                ref={inputRef}
+                locale={locale}
+                type="search"
+                inputMode="search"
+                autoComplete="off"
+                enterKeyHint="search"
+                value={query}
+                placeholder={m.quickMove.searchPlaceholder}
+                onChange={(event) => setQuery(event.target.value)}
+                className="min-h-12 pr-11 pl-10"
+              />
+              {query ? (
+                <button
+                  type="button"
+                  aria-label={m.common.clear}
+                  onClick={() => {
+                    setQuery('');
+                    inputRef.current?.focus();
+                  }}
+                  className={cn(
+                    'absolute top-1/2 right-1 inline-flex min-h-10 min-w-10 -translate-y-1/2 items-center justify-center rounded-sm text-ink-muted hover:text-ink',
+                    focusRing,
+                  )}
+                >
+                  <X aria-hidden size={18} strokeWidth={1.75} />
+                </button>
+              ) : null}
+            </span>
+          </label>
+          <Button
+            locale={locale}
+            size="lg"
+            variant="secondary"
+            onClick={() => {
+              setScanKey((key) => key + 1);
+              setScanOpen(true);
+            }}
+          >
+            <ScanLine aria-hidden size={20} strokeWidth={1.75} />
+            {m.quickMove.scan}
+          </Button>
+        </form>
 
-      {recent.length > 0 ? (
-        <section aria-labelledby="recent-title">
+        {recent.length > 0 ? (
+          <section aria-labelledby="recent-title">
+            <h2
+              id="recent-title"
+              className={cn(ts('ui', locale), 'm-0 mb-2 text-ink-muted')}
+            >
+              {m.quickMove.recent}
+            </h2>
+            <ul className="m-0 flex list-none flex-wrap gap-2 p-0">
+              {recent.map((item) => (
+                <li key={item.id}>
+                  <button
+                    type="button"
+                    onClick={() => open(item)}
+                    className={cn(
+                      ts('ui', locale),
+                      'inline-flex min-h-11 max-w-[16rem] items-center gap-2 rounded-sm border border-line-strong bg-surface-raised px-3 text-left text-ink hover:bg-surface-sunken',
+                      focusRing,
+                    )}
+                  >
+                    <span className="truncate">{nameIn(item, locale)}</span>
+                    <span className="shrink-0 tabular-nums text-ink-muted">
+                      {formatQty(item.onHand, null, locale)}
+                    </span>
+                  </button>
+                </li>
+              ))}
+            </ul>
+          </section>
+        ) : null}
+
+        <section aria-labelledby="list-title">
           <h2
-            id="recent-title"
+            id="list-title"
             className={cn(ts('ui', locale), 'm-0 mb-2 text-ink-muted')}
           >
-            {m.quickMove.recent}
+            {searching ? m.quickMove.results : m.quickMove.lowFirst}
           </h2>
-          <ul className="m-0 flex list-none flex-wrap gap-2 p-0">
-            {recent.map((item) => (
-              <li key={item.id}>
-                <button
-                  type="button"
-                  onClick={() => open(item)}
-                  className={cn(
-                    ts('ui', locale),
-                    'inline-flex min-h-11 max-w-[16rem] items-center gap-2 rounded-sm border border-line-strong bg-surface-raised px-3 text-left text-ink hover:bg-surface-sunken',
-                    focusRing,
-                  )}
-                >
-                  <span className="truncate">{nameIn(item, locale)}</span>
-                  <span className="shrink-0 tabular-nums text-ink-muted">
-                    {formatQty(item.onHand, null, locale)}
-                  </span>
-                </button>
-              </li>
-            ))}
-          </ul>
+          {searching && results.length === 0 ? (
+            <EmptyState
+              locale={locale}
+              title={t('quickMove.noResults', { query: searchTerm.trim() })}
+              description={m.quickMove.noResultsHint}
+            />
+          ) : (
+            <ul className="sl-stagger m-0 grid list-none gap-2 p-0 lg:gap-0 lg:divide-y lg:divide-line lg:overflow-hidden lg:rounded-md lg:border lg:border-line lg:bg-surface-raised">
+              {list.map((item) => (
+                <li key={item.id}>
+                  <button
+                    key={flash?.id === item.id ? `flash-${flash.count}` : 'row'}
+                    type="button"
+                    onClick={() => open(item)}
+                    aria-current={
+                      panelItem?.id === item.id ? 'true' : undefined
+                    }
+                    className={cn(
+                      'flex min-h-[4.5rem] w-full items-center rounded-md border border-line bg-surface-raised px-3 py-3 text-left hover:bg-surface-sunken',
+                      'lg:min-h-16 lg:rounded-none lg:border-0 lg:py-2 aria-[current=true]:bg-primary-soft',
+                      flash?.id === item.id && 'sl-flash',
+                      focusRing,
+                    )}
+                  >
+                    <ItemRowContent item={item} locale={locale} emphasis />
+                  </button>
+                </li>
+              ))}
+            </ul>
+          )}
         </section>
-      ) : null}
-
-      <section aria-labelledby="list-title">
-        <h2
-          id="list-title"
-          className={cn(ts('ui', locale), 'm-0 mb-2 text-ink-muted')}
-        >
-          {searching ? m.quickMove.results : m.quickMove.lowFirst}
-        </h2>
-        {searching && results.length === 0 ? (
-          <EmptyState
-            locale={locale}
-            title={t('quickMove.noResults', { query: searchTerm.trim() })}
-            description={m.quickMove.noResultsHint}
-          />
-        ) : (
-          <ul className="sl-stagger m-0 grid list-none gap-2 p-0 lg:gap-0 lg:divide-y lg:divide-line lg:overflow-hidden lg:rounded-md lg:border lg:border-line lg:bg-surface-raised">
-            {list.map((item) => (
-              <li key={item.id}>
-                <button
-                  key={flash?.id === item.id ? `flash-${flash.count}` : 'row'}
-                  type="button"
-                  onClick={() => open(item)}
-                  aria-current={panelItem?.id === item.id ? 'true' : undefined}
-                  className={cn(
-                    'flex min-h-[4.5rem] w-full items-center rounded-md border border-line bg-surface-raised px-3 py-3 text-left hover:bg-surface-sunken',
-                    'lg:min-h-16 lg:rounded-none lg:border-0 lg:py-2 aria-[current=true]:bg-primary-soft',
-                    flash?.id === item.id && 'sl-flash',
-                    focusRing,
-                  )}
-                >
-                  <ItemRowContent item={item} locale={locale} emphasis />
-                </button>
-              </li>
-            ))}
-          </ul>
-        )}
-      </section>
-
       </div>
 
       {panelItem ? (
@@ -350,14 +373,22 @@ export function QuickMove({ locale }: { locale: Locale }) {
               onSettled={onSettled}
             />
           </div>
-          <section aria-labelledby="panel-moves" className="border-t border-line pt-4">
-            <h3 id="panel-moves" className={cn(ts('ui', locale), 'm-0 mb-3 text-ink-muted')}>
+          <section
+            aria-labelledby="panel-moves"
+            className="border-t border-line pt-4"
+          >
+            <h3
+              id="panel-moves"
+              className={cn(ts('ui', locale), 'm-0 mb-3 text-ink-muted')}
+            >
               {m.quickMove.recentMoves}
             </h3>
             {panelMoves.length ? (
               <MovementCards rows={panelMoves} locale={locale} />
             ) : (
-              <p className={cn(ts('body-sm', locale), 'm-0 text-ink-muted')}>{m.quickMove.noMoves}</p>
+              <p className={cn(ts('body-sm', locale), 'm-0 text-ink-muted')}>
+                {m.quickMove.noMoves}
+              </p>
             )}
           </section>
         </aside>
