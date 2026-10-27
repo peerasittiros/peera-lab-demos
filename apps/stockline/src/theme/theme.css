@@ -1,0 +1,141 @@
+/*
+ * Stockline theme "Back-room clipboard". Colours from demo_product/stockline-redesign/DESIGN.md §2;
+ * v2 type, shape and motif from demo_product/ux-v2/stockline.md.
+ * Loaded after @peera/ui (app/globals.css), so these declarations win.
+ * Contrast pairs are asserted in contrast.test.ts: keep the hex values in the
+ * light and dark blocks, one declaration per line.
+ */
+
+:root,
+[data-theme='light'] {
+  --surface: #ffffff;
+  --surface-raised: #ffffff;
+  --surface-sunken: #f4f7f7;
+  --ink: #14201f;
+  --ink-muted: #5b6b6a;
+  --ink-faint: #5b6b6a;
+  --line: #dce5e4;
+  --line-strong: #7a8a89;
+  --primary: #0a6767;
+  --primary-hover: #085454;
+  --on-primary: #ffffff;
+  --primary-soft: #ddf1ef;
+  --success: #166534;
+  --success-soft: #dcfce7;
+  --warning: #92400e;
+  --warning-soft: #fef3c7;
+  --danger: #b91c1c;
+  --danger-soft: #fee2e2;
+  --surface-tint: #eef4f3;
+  --label: #14201f;
+
+  --product-accent: var(--primary);
+  --product-on-accent: var(--on-primary);
+  --product-accent-soft: var(--primary-soft);
+  --focus-ring: var(--primary);
+  --link: var(--primary);
+
+  --radius-xs: 4px;
+  --radius-sm: 6px;
+  --radius-md: 10px;
+  --radius-lg: 16px;
+  --shadow-sm: 0 1px 2px rgba(20, 32, 31, 0.08);
+  --shadow-md: 0 4px 12px -2px rgba(20, 32, 31, 0.12);
+  --shadow-lg: 0 16px 40px -12px rgba(20, 32, 31, 0.24);
+}
+
+[data-theme='dark'] {
+  --surface: #0e1716;
+  --surface-raised: #152221;
+  --surface-sunken: #1b2c2b;
+  --ink: #eaf2f1;
+  --ink-muted: #a3b5b3;
+  --ink-faint: #a3b5b3;
+  --line: #2a3d3c;
+  --line-strong: #728483;
+  --primary: #5fd0c8;
+  --primary-hover: #7bdcd5;
+  --on-primary: #0e1716;
+  --primary-soft: #17353a;
+  --success: #4ade80;
+  --success-soft: #12301f;
+  --warning: #fbbf24;
+  --warning-soft: #3a2a0a;
+  --danger: #f87171;
+  --danger-soft: #3b1518;
+  --surface-tint: #13201f;
+  --label: #eaf2f1;
+
+  --product-accent: var(--primary);
+  --product-on-accent: var(--on-primary);
+  --product-accent-soft: var(--primary-soft);
+  --focus-ring: var(--primary);
+  --link: var(--primary);
+
+  --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.5);
+  --shadow-md: 0 4px 12px -2px rgba(0, 0, 0, 0.6);
+  --shadow-lg: 0 16px 40px -12px rgba(0, 0, 0, 0.8);
+}
+
+/* Fonts: next/font variables from src/theme/fonts.ts. Barlow for Latin, Bai Jamjuree for Thai headings, Plex Sans
+   Thai for Thai body text, Barlow Semi Condensed for quantities (.num). */
+:root {
+  --font-display:
+    var(--nf-barlow), var(--nf-bai-jamjuree), 'Helvetica Neue', Arial, sans-serif;
+  --font-display-th:
+    var(--nf-bai-jamjuree), var(--nf-barlow), 'Noto Sans Thai', sans-serif;
+  --font-sans:
+    var(--nf-barlow), var(--nf-plex-sans-thai), 'Noto Sans Thai',
+    'Helvetica Neue', Arial, sans-serif;
+  --font-numeric: var(--nf-barlow-condensed), var(--nf-barlow), var(--nf-plex-sans-thai), sans-serif;
+}
+
+/* Type scale (ux-v2/stockline.md): Barlow is narrow, so headings get weight instead of negative tracking. */
+.headline-lg { font-size: 32px; line-height: 40px; font-weight: 700; letter-spacing: 0; }
+.headline-lg-th { font-size: 28px; line-height: 44px; font-weight: 600; }
+.headline-md { font-size: 26px; line-height: 32px; font-weight: 700; letter-spacing: 0; }
+.headline-md-th { font-size: 24px; line-height: 38px; font-weight: 600; }
+.headline-sm { font-size: 22px; line-height: 28px; font-weight: 600; letter-spacing: 0; }
+.headline-sm-th { font-size: 20px; line-height: 32px; font-weight: 600; }
+.title { font-weight: 600; }
+
+/* Motion (ux-v2/README.md §4). Lists fade up 8 px, the first eight rows 30 ms apart; a saved row flashes the soft
+   accent for 1.2 s; sheets slide in. Under reduced motion nothing moves and the flash stays as a static fill. */
+@keyframes sl-enter { from { opacity: 0; transform: translateY(8px); } }
+@keyframes sl-flash { from { background-color: var(--primary-soft); } }
+@keyframes sl-sheet-up { from { transform: translateY(24px); opacity: 0.6; } }
+@keyframes sl-sheet-in { from { transform: translateX(24px); opacity: 0.6; } }
+.sl-stagger > :nth-child(-n + 8) { animation: sl-enter 360ms cubic-bezier(0.2, 0.7, 0.2, 1) both; }
+.sl-stagger > :nth-child(2) { animation-delay: 30ms; }
+.sl-stagger > :nth-child(3) { animation-delay: 60ms; }
+.sl-stagger > :nth-child(4) { animation-delay: 90ms; }
+.sl-stagger > :nth-child(5) { animation-delay: 120ms; }
+.sl-stagger > :nth-child(6) { animation-delay: 150ms; }
+.sl-stagger > :nth-child(7) { animation-delay: 180ms; }
+.sl-stagger > :nth-child(8) { animation-delay: 210ms; }
+.sl-flash { animation: sl-flash 1200ms cubic-bezier(0.2, 0.7, 0.2, 1); }
+.peera-sheet[data-state='open'] { animation: sl-sheet-up 220ms cubic-bezier(0.2, 0.7, 0.2, 1); }
+@media (min-width: 768px) { .peera-sheet[data-state='open'] { animation-name: sl-sheet-in; } }
+@media (prefers-reduced-motion: reduce) {
+  .sl-stagger > *, .peera-sheet[data-state='open'] { animation: none !important; }
+  .sl-flash { animation: none !important; background-color: var(--primary-soft) !important; }
+}
+
+/* Dashboard tiles: the figures in the numeric face, larger than the tile's headline style. */
+.kpi-num .headline-sm,
+.kpi-num .headline-sm-th { font-family: var(--font-numeric); font-variant-numeric: tabular-nums; font-size: 28px; line-height: 34px; font-weight: 600; }
+
+/* Quantities and money: condensed, tabular figures, so columns line up and big counts fit. */
+.num { font-family: var(--font-numeric); font-variant-numeric: tabular-nums; font-weight: 600; letter-spacing: 0; }
+
+@theme inline {
+  --color-primary: var(--primary);
+  --color-primary-hover: var(--primary-hover);
+  --color-on-primary: var(--on-primary);
+  --color-primary-soft: var(--primary-soft);
+  --color-surface-tint: var(--surface-tint);
+  --color-label: var(--label);
+
+  --shadow-md: var(--shadow-md);
+  --shadow-lg: var(--shadow-lg);
+}

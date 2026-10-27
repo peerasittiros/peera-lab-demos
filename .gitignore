@@ -54,3 +54,5 @@ AGENTS.md
 CLAUDE.md
 Plan.md
 log.md
+.vercel
+.env*
