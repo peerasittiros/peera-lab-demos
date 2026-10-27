@@ -55,6 +55,23 @@ export async function expectNoA11yViolations(
   page: Page,
   options: { exclude?: string[] } = {},
 ): Promise<void> {
+  // Mid-animation opacity lowers measured contrast. Wait (at most 4 s) until two checks 250 ms apart find nothing
+  // animating, so rows that mount after the first check are covered too. Endless animations (pulses) are ignored.
+  const quiet = () =>
+    page.evaluate(() =>
+      document
+        .getAnimations()
+        .every(
+          (animation) =>
+            animation.playState !== 'running' || animation.effect?.getTiming().iterations === Infinity,
+        ),
+    );
+  const started = Date.now();
+  let calm = 0;
+  while (Date.now() - started < 4000 && calm < 2) {
+    calm = (await quiet()) ? calm + 1 : 0;
+    await page.waitForTimeout(250);
+  }
   let builder = new AxeBuilder({ page }).withTags([
     'wcag2a',
     'wcag2aa',

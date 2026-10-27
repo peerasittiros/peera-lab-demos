@@ -58,7 +58,7 @@ export function SheetContent({
         lang={locale}
         className={cn(
           ts('ui', locale),
-          'fixed inset-x-0 bottom-0 z-50 max-h-[85dvh] overflow-y-auto rounded-t-md border border-line bg-surface-raised p-5 pb-[max(1.25rem,env(safe-area-inset-bottom))] text-ink shadow-lift',
+          'peera-sheet fixed inset-x-0 bottom-0 z-50 max-h-[85dvh] overflow-y-auto rounded-t-md border border-line bg-surface-raised p-5 pb-[max(1.25rem,env(safe-area-inset-bottom))] text-ink shadow-lift',
           'transition-transform duration-[var(--duration-base)] data-[state=closed]:translate-y-full motion-reduce:transition-none',
           'md:inset-y-0 md:left-auto md:right-0 md:h-dvh md:max-h-none md:w-[min(28rem,90vw)] md:translate-y-0 md:rounded-none md:border-y-0 md:border-r-0 md:border-l md:pb-5 md:data-[state=closed]:translate-y-0 md:data-[state=closed]:translate-x-full',
           className,

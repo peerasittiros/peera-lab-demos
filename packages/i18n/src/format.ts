@@ -6,6 +6,47 @@ const intlLocale: Record<Locale, string> = {
   en: 'en-GB',
 };
 
+// Intl formatters are slow to build and a list formats hundreds of values, so each locale + options pair is built
+// once and reused. The output is the same as building a new one per call.
+const numberFormats = new Map<string, Intl.NumberFormat>();
+const dateFormats = new Map<string, Intl.DateTimeFormat>();
+const relativeFormats = new Map<string, Intl.RelativeTimeFormat>();
+
+function numberFormat(
+  locale: string,
+  options: Intl.NumberFormatOptions = {},
+): Intl.NumberFormat {
+  const key = `${locale}|${JSON.stringify(options)}`;
+  let format = numberFormats.get(key);
+  if (!format) {
+    format = new Intl.NumberFormat(locale, options);
+    numberFormats.set(key, format);
+  }
+  return format;
+}
+
+function dateFormat(
+  locale: string,
+  options: Intl.DateTimeFormatOptions,
+): Intl.DateTimeFormat {
+  const key = `${locale}|${JSON.stringify(options)}`;
+  let format = dateFormats.get(key);
+  if (!format) {
+    format = new Intl.DateTimeFormat(locale, options);
+    dateFormats.set(key, format);
+  }
+  return format;
+}
+
+function relativeFormat(locale: string): Intl.RelativeTimeFormat {
+  let format = relativeFormats.get(locale);
+  if (!format) {
+    format = new Intl.RelativeTimeFormat(locale, { numeric: 'auto' });
+    relativeFormats.set(locale, format);
+  }
+  return format;
+}
+
 export type MoneyStyle = 'table' | 'prose';
 
 /** Amount is accepted in satang; output is locale-aware and always uses Arabic digits. */
@@ -16,7 +57,7 @@ export function formatMoney(
 ): string {
   const amount = satang / 100;
   if (style === 'prose') {
-    const formatted = new Intl.NumberFormat(
+    const formatted = numberFormat(
       locale === 'th' ? 'th-TH-u-nu-latn' : 'en-GB',
       {
         maximumFractionDigits: 0,
@@ -24,7 +65,7 @@ export function formatMoney(
     ).format(amount);
     return locale === 'th' ? `${formatted} บาท` : `THB ${formatted}`;
   }
-  return new Intl.NumberFormat(locale === 'th' ? 'th-TH-u-nu-latn' : 'en-GB', {
+  return numberFormat(locale === 'th' ? 'th-TH-u-nu-latn' : 'en-GB', {
     style: 'currency',
     currency: 'THB',
     currencyDisplay: 'narrowSymbol',
@@ -37,7 +78,7 @@ export function formatDate(
   value: Date | string | number,
   locale: Locale,
 ): string {
-  return new Intl.DateTimeFormat(intlLocale[locale], {
+  return dateFormat(intlLocale[locale], {
     day: 'numeric',
     month: 'short',
     year: 'numeric',
@@ -49,7 +90,7 @@ export function formatDateTime(
   value: Date | string | number,
   locale: Locale,
 ): string {
-  const date = new Intl.DateTimeFormat(intlLocale[locale], {
+  const date = dateFormat(intlLocale[locale], {
     day: 'numeric',
     month: 'short',
     year: 'numeric',
@@ -62,7 +103,7 @@ export function formatTime(
   value: Date | string | number,
   locale: Locale,
 ): string {
-  const time = new Intl.DateTimeFormat(
+  const time = dateFormat(
     locale === 'th' ? 'th-TH-u-nu-latn' : 'en-GB',
     {
       hour: '2-digit',
@@ -79,7 +120,7 @@ export function formatNumber(
   locale: Locale,
   options: Intl.NumberFormatOptions = {},
 ): string {
-  return new Intl.NumberFormat(
+  return numberFormat(
     locale === 'th' ? 'th-TH-u-nu-latn' : 'en-US',
     options,
   ).format(value);
@@ -90,7 +131,7 @@ export function formatPercent(
   locale: Locale,
   maximumFractionDigits = 0,
 ): string {
-  return new Intl.NumberFormat(locale === 'th' ? 'th-TH-u-nu-latn' : 'en-GB', {
+  return numberFormat(locale === 'th' ? 'th-TH-u-nu-latn' : 'en-GB', {
     style: 'percent',
     maximumFractionDigits,
   }).format(value);
@@ -112,9 +153,8 @@ export function formatRelative(
           ? ['hour', 3600]
           : ['day', 86400];
   const amount = Math.round(difference / 1000 / divisor);
-  return new Intl.RelativeTimeFormat(
+  return relativeFormat(
     locale === 'th' ? 'th-TH-u-nu-latn' : 'en-GB',
-    { numeric: 'auto' },
   ).format(amount, unit);
 }
 

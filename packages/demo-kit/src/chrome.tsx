@@ -74,6 +74,8 @@ export type CoachMarksProps = {
   steps: CoachStep[];
   /** Remembered per tab in sessionStorage, so the tour shows once per visit. */
   storageKey: string;
+  /** `floating` (default) sits over the page at the bottom; `inline` is a card in the page flow that never covers content. */
+  placement?: 'floating' | 'inline';
   className?: string;
 };
 
@@ -82,11 +84,14 @@ export function CoachMarks({
   locale,
   steps,
   storageKey,
+  placement = 'floating',
   className,
 }: CoachMarksProps) {
   const strings = kitStrings[locale];
   const key = `peera:coach:${storageKey}`;
-  const [open, setOpen] = useState(false);
+  // Inline: in the server HTML from the start, so a first visit has no layout shift; a visitor who already
+  // dismissed it in this tab sees it removed on mount. Floating: added on mount (it covers, never shifts).
+  const [open, setOpen] = useState(placement === 'inline');
   const [index, setIndex] = useState(0);
   const titleId = useId();
 
@@ -122,7 +127,9 @@ export function CoachMarks({
       }}
       className={cn(
         ts('body-sm', locale),
-        'fixed inset-x-3 bottom-3 z-40 rounded-md border border-line bg-surface-raised p-4 text-ink shadow-lift md:inset-x-auto md:right-4 md:bottom-4 md:w-96',
+        placement === 'inline'
+          ? 'relative rounded-md border border-line bg-surface-raised p-4 text-ink'
+          : 'fixed inset-x-3 bottom-3 z-40 rounded-md border border-line bg-surface-raised p-4 text-ink shadow-lift md:inset-x-auto md:right-4 md:bottom-4 md:w-96',
         className,
       )}
     >
