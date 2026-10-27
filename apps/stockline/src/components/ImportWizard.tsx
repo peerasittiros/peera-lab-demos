@@ -14,6 +14,7 @@ import {
 import { CircleAlert, FileUp } from 'lucide-react';
 import { useState } from 'react';
 import { importRows } from '../client-store/master-commands';
+import { workbookRows } from '../lib/workbook';
 import { useStoreInstance, useStoreState } from '../client-store/hooks';
 import {
   detectColumns,
@@ -56,8 +57,7 @@ export function ImportWizard({ locale }: { locale: Locale }) {
     units: string[];
   } | null>(null);
 
-  const load = (text: string) => {
-    const rows = parseDelimited(text);
+  const load = (rows: string[][]) => {
     if (rows.length < 2) {
       setError(i.noRows);
       return;
@@ -71,12 +71,16 @@ export function ImportWizard({ locale }: { locale: Locale }) {
   const onFile = async (file: File | undefined) => {
     if (!file) return;
     if (/\.(xlsx|xls|ods)$/i.test(file.name)) {
-      // SheetJS (02 §7) isn't installed yet; CSV and pasted rows cover the same data.
-      setError(i.xlsxUnavailable);
+      // Excel and OpenDocument: the first sheet, read in the browser (SheetJS loads on demand).
+      try {
+        load(await workbookRows(await file.arrayBuffer()));
+      } catch {
+        setError(i.workbookError);
+      }
       return;
     }
     try {
-      load(await file.text());
+      load(parseDelimited(await file.text()));
     } catch (reason) {
       setError(t('import.parseError', { reason: String(reason) }));
     }
@@ -194,7 +198,7 @@ export function ImportWizard({ locale }: { locale: Locale }) {
               </span>
               <input
                 type="file"
-                accept=".csv,.tsv,.txt,.xlsx,.xls,text/csv"
+                accept=".csv,.tsv,.txt,.xlsx,.xls,.ods,text/csv"
                 className="sr-only"
                 onChange={(event) => void onFile(event.target.files?.[0])}
               />
@@ -224,7 +228,7 @@ export function ImportWizard({ locale }: { locale: Locale }) {
               variant="secondary"
               className="self-start"
               disabled={!paste.trim()}
-              onClick={() => load(paste)}
+              onClick={() => load(parseDelimited(paste))}
             >
               {i.usePaste}
             </Button>

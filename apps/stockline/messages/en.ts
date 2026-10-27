@@ -554,8 +554,8 @@ export const en = defineMessages()({
     sampleFile: 'Download a sample CSV',
     parsing: 'Reading the file',
     parseError: 'This file could not be read: {reason}',
-    xlsxUnavailable:
-      'Excel files are not supported yet. Save the sheet as CSV and upload that.',
+    workbookError:
+      'This file could not be read as a spreadsheet. Save it as .xlsx or CSV and upload it again.',
     noRows: 'No rows found under the header.',
     tooManyRows: 'Only the first 500 rows can be imported.',
     mapHint: 'We matched the columns we recognised. Check each one.',
