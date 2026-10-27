@@ -1,12 +1,18 @@
 'use client';
 
-import { useCallback, useEffect, useSyncExternalStore, type ReactNode } from 'react';
+import {
+  useCallback,
+  useEffect,
+  useSyncExternalStore,
+  type ReactNode,
+} from 'react';
 import type { Role } from '../domain/stock';
+import { ROLE_KEY } from './variant';
 
 // The demo role (owner or staff) lives in this browser (SPEC §2.3): localStorage, or `?role=` when a link carries it.
 // No server session or database row is involved, so a visit writes nothing. The DemoBar switch calls `setRole`.
 
-const KEY = 'stockline.role';
+const KEY = ROLE_KEY;
 const DEFAULT: Role = 'owner';
 const listeners = new Set<() => void>();
 
@@ -41,6 +47,17 @@ function subscribe(listener: () => void) {
   };
 }
 
+/** The role this visit starts with, before the provider has run: `?role=` in the link wins, else the stored one. */
+export function initialRole(): Role {
+  try {
+    const fromLink = new URLSearchParams(window.location.search).get('role');
+    if (isRole(fromLink)) return fromLink;
+  } catch {
+    // No window (server): the default.
+  }
+  return readStored();
+}
+
 /** The role on the server is always the default; the browser reads its own choice after hydration. */
 function getServerSnapshot(): Role {
   return DEFAULT;
@@ -59,7 +76,10 @@ export function useRole(): Role {
   return useSyncExternalStore(subscribe, readStored, getServerSnapshot);
 }
 
-export function useRoleControl(): { role: Role; setRole: (role: Role) => void } {
+export function useRoleControl(): {
+  role: Role;
+  setRole: (role: Role) => void;
+} {
   const role = useRole();
   const setRole = useCallback((next: Role) => writeStored(next), []);
   return { role, setRole };

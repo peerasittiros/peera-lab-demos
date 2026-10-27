@@ -45,3 +45,46 @@ test('staff do not see cost on the items list', async ({ page }) => {
     page.getByRole('columnheader', { name: 'Stock value', exact: true }),
   ).toHaveCount(0);
 });
+
+// 02 §10: staff never receive cost data in any server response. Staff start in a fresh browser (`?role=staff`), so
+// nothing was fetched as the owner first; every response body (HTML, RSC, JSON) is checked for a money column.
+test('staff receive no money columns in any server response', async ({
+  page,
+}) => {
+  await page.setViewportSize({ width: 1280, height: 900 });
+  const bodies: { url: string; text: string }[] = [];
+  page.on('response', async (response) => {
+    const type = response.headers()['content-type'] ?? '';
+    // Data comes back as HTML, RSC or JSON; scripts only name the fields in code.
+    if (!/json|html|text\/x-component/.test(type)) return;
+    try {
+      bodies.push({ url: response.url(), text: await response.text() });
+    } catch {
+      // A redirect or an aborted request has no body.
+    }
+  });
+  await page.goto('/en?role=staff');
+  await expect(
+    page.getByRole('button', { name: /^Account: .*, Staff$/ }),
+  ).toBeVisible();
+  for (const path of [
+    '/en/items',
+    '/en/history',
+    '/en/reorder',
+    '/en/counts',
+  ]) {
+    await page.goto(path);
+    await expect(page.getByRole('heading', { level: 1 })).toBeVisible();
+    await page.waitForLoadState('networkidle');
+  }
+  const snapshot = bodies.find((body) =>
+    body.url.includes('/api/demo/snapshot'),
+  );
+  expect(snapshot?.url).toContain('role=staff');
+  const leaks = bodies
+    .filter((body) =>
+      /"(costSatang|priceSatang|unitCostSatang)"/.test(body.text),
+    )
+    .map((body) => body.url);
+  expect(leaks).toEqual([]);
+});

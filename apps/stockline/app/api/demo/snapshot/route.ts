@@ -1,4 +1,4 @@
-import { toSnapshot } from '@/src/client-store/snapshot';
+import { forRole, toSnapshot } from '@/src/client-store/snapshot';
 import { readTemplateRows } from '@/src/db/queries/snapshot';
 import {
   buildSeedVariant,
@@ -23,16 +23,17 @@ function parseVariant(value: string | null): StocklineVariant | null {
 }
 
 export async function GET(request: Request) {
-  const variant = parseVariant(
-    new URL(request.url).searchParams.get('variant'),
-  );
+  const params = new URL(request.url).searchParams;
+  const variant = parseVariant(params.get('variant'));
+  // Staff get the copy without money; anything else is the owner's copy.
+  const role = params.get('role') === 'staff' ? 'staff' : 'owner';
   if (!variant)
     return Response.json({ error: 'unknown variant' }, { status: 400 });
 
   const now = new Date();
   try {
     const rows = await readTemplateRows(getDb(), TEMPLATE_TENANTS[variant]);
-    return Response.json(toSnapshot(rows, variant, now), {
+    return Response.json(forRole(toSnapshot(rows, variant, now), role), {
       headers: {
         'Cache-Control': SHARED_CACHE,
         'x-snapshot-source': 'database',
@@ -45,11 +46,14 @@ export async function GET(request: Request) {
       '[stockline] snapshot: database unavailable, using the seed generator',
       error,
     );
-    return Response.json(toSnapshot(buildSeedVariant(variant), variant, now), {
-      headers: {
-        'Cache-Control': 'no-store',
-        'x-snapshot-source': 'generator',
+    return Response.json(
+      forRole(toSnapshot(buildSeedVariant(variant), variant, now), role),
+      {
+        headers: {
+          'Cache-Control': 'no-store',
+          'x-snapshot-source': 'generator',
+        },
       },
-    });
+    );
   }
 }

@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { buildSeedVariant, STOCKLINE_VARIANTS } from '../db/seed/generator';
 import { seedSnapshot, TEST_NOW } from './testing';
-import { SNAPSHOT_SCHEMA_VERSION, toSnapshot } from './snapshot';
+import { forRole, SNAPSHOT_SCHEMA_VERSION, toSnapshot } from './snapshot';
 
 describe('toSnapshot', () => {
   it.each(STOCKLINE_VARIANTS)(
@@ -50,5 +50,34 @@ describe('toSnapshot', () => {
       .toISOString()
       .slice(0, 10);
     expect(day).toBe(expected);
+  });
+});
+
+describe('forRole', () => {
+  const money = /"(costSatang|priceSatang|unitCostSatang)"/;
+
+  it('gives the owner every column, marked as the owner copy', () => {
+    const snapshot = seedSnapshot('minimart');
+    const owner = forRole(snapshot, 'owner');
+    expect(owner.role).toBe('owner');
+    expect(owner.items).toEqual(snapshot.items);
+    expect(JSON.stringify(owner)).toMatch(money);
+  });
+
+  it.each(STOCKLINE_VARIANTS)(
+    'gives staff no money anywhere in the %s shop',
+    (variant) => {
+      const staff = forRole(seedSnapshot(variant), 'staff');
+      expect(staff.role).toBe('staff');
+      expect(JSON.stringify(staff)).not.toMatch(money);
+    },
+  );
+
+  it('keeps every row staff may see', () => {
+    const snapshot = seedSnapshot('minimart');
+    const staff = forRole(snapshot, 'staff');
+    expect(staff.items).toHaveLength(snapshot.items.length);
+    expect(staff.movements).toHaveLength(snapshot.movements.length);
+    expect(staff.items[0]!.sku).toBe(snapshot.items[0]!.sku);
   });
 });

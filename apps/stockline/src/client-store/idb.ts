@@ -4,7 +4,11 @@ import type { Snapshot } from './snapshot';
 // Where the visitor's state lives: IndexedDB when the browser allows it, else memory (private mode, the website's
 // iframe with storage blocked). Both implement `Persistence`, so the store does not care which one it has.
 
-export type Meta = { variant: string; snapshotDate: string };
+export type Meta = {
+  variant: string;
+  role?: 'owner' | 'staff';
+  snapshotDate: string;
+};
 
 export type Persistence = {
   /** `indexeddb` keeps changes across visits; `memory` only until this page closes. */
@@ -22,7 +26,7 @@ export type Persistence = {
 
 export const DB_NAME = 'stockline';
 /**
- * localStorage mirror of the stored snapshot, `<variant>:<YYYY-MM-DD>`. The head script (SnapshotPreload) reads it
+ * localStorage mirror of the stored snapshot, `<variant>:<role>:<YYYY-MM-DD>`. The head script (SnapshotPreload) reads it
  * synchronously, before IndexedDB can answer, to skip preloading a snapshot this browser already has for today.
  */
 export const SNAPSHOT_HINT_KEY = 'stockline.snapshot';
@@ -125,7 +129,7 @@ function createIndexedDbPersistence(db: IDBDatabase): Persistence {
       const tx = db.transaction(META, 'readwrite');
       tx.objectStore(META).put(meta, SINGLE_KEY);
       await transactionDone(tx);
-      writeHint(`${meta.variant}:${meta.snapshotDate}`);
+      writeHint(`${meta.variant}:${meta.role ?? 'owner'}:${meta.snapshotDate}`);
     },
     async readSnapshot() {
       return (await request(store(SNAPSHOT, 'readonly').get(SINGLE_KEY))) as

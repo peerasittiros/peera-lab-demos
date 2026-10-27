@@ -7,7 +7,7 @@ import {
 } from './ops';
 import { bangkokDay } from './relativize';
 import type { Persistence } from './idb';
-import type { Snapshot } from './snapshot';
+import type { Snapshot, SnapshotRole } from './snapshot';
 import type { SyncChannel, SyncMessage } from './sync';
 
 // The browser store: the snapshot plus the visitor's op log, rebuilt in memory. Views read `getState()` and
@@ -18,6 +18,8 @@ export type StoreStatus = 'loading' | 'ready' | 'error';
 export type StoreState = {
   status: StoreStatus;
   variant: string | null;
+  /** Whose copy of the snapshot is loaded: staff get one without money. */
+  role: SnapshotRole;
   snapshot: Snapshot | null;
   ledger: Ledger | null;
   /** Every op in the log, in order (for the change history of an item). */
@@ -29,7 +31,7 @@ export type StoreState = {
 
 export type StoreDeps = {
   persistence: Persistence;
-  fetchSnapshot: (variant: string) => Promise<Snapshot>;
+  fetchSnapshot: (variant: string, role: SnapshotRole) => Promise<Snapshot>;
   /** Injected so tests can move the clock; the app passes `() => new Date()`. */
   now: () => Date;
   /** Opens the tab-to-tab channel; `receive` runs for ops and resets posted by the other tabs. */
@@ -41,6 +43,7 @@ export type StoreDeps = {
 const initialState: StoreState = {
   status: 'loading',
   variant: null,
+  role: 'owner',
   snapshot: null,
   ledger: null,
   ops: [],
@@ -53,6 +56,8 @@ export function createStore(deps: StoreDeps) {
   let state: StoreState = { ...initialState, persistence: persistence.kind };
   const listeners = new Set<() => void>();
   const channel = deps.openChannel((message) => void onMessage(message));
+  // Each load takes a number; a load that a newer one has replaced (a quick role switch) drops its result.
+  let loads = 0;
 
   function set(next: Partial<StoreState>) {
     state = { ...state, ...next };
@@ -60,11 +65,13 @@ export function createStore(deps: StoreDeps) {
   }
 
   /**
-   * Loads the shop for `variant`. Keeps the visitor's ops across a new day; drops everything when the variant
-   * changes. A failed fetch falls back to the cached snapshot, and to `error` only when there is none.
+   * Loads the shop for `variant`, in the copy `role` may see. Keeps the visitor's ops across a new day and a role
+   * switch; drops everything when the variant changes. A failed fetch falls back to the cached snapshot, and to
+   * `error` only when there is none (never to a cached copy of the other role).
    */
-  async function load(variant: string) {
-    set({ status: 'loading', variant });
+  async function load(variant: string, role: SnapshotRole = state.role) {
+    const run = ++loads;
+    set({ status: 'loading', variant, role });
     try {
       let meta = await persistence.readMeta();
       if (meta && meta.variant !== variant) {
@@ -74,13 +81,16 @@ export function createStore(deps: StoreDeps) {
 
       let snapshot = await persistence.readSnapshot();
       let fresh: Snapshot | null = null;
+      const otherRole =
+        Boolean(snapshot) && (snapshot?.role ?? 'owner') !== role;
+      if (otherRole) snapshot = undefined;
       const stale =
         !snapshot ||
         snapshot.snapshotDate !== bangkokDay(now()) ||
         snapshot.variant !== variant;
       if (stale) {
         try {
-          fresh = await fetchSnapshot(variant);
+          fresh = await fetchSnapshot(variant, role);
           snapshot = fresh;
         } catch (error) {
           if (!snapshot) throw error;
@@ -90,21 +100,25 @@ export function createStore(deps: StoreDeps) {
       if (!snapshot) throw new Error('[stockline] no snapshot');
 
       const ops = await persistence.readOps();
+      if (run !== loads) return;
       const { ledger, skipped } = replay(snapshot, ops);
       set({ status: 'ready', snapshot, ledger, ops, skippedOps: skipped });
       // The page shows the shop first; storing the new copy (a large structured clone) comes after.
       if (fresh) await keep(fresh, variant);
     } catch {
-      set({ status: 'error' });
+      if (run === loads) set({ status: 'error' });
     }
   }
 
   /** Stores today's snapshot for the next visit. A failure (storage full or blocked) only means it is fetched again. */
   async function keep(snapshot: Snapshot, variant: string) {
+    // Storing is a large structured clone: a task of its own, not part of the first render with the data.
+    await new Promise((resolve) => setTimeout(resolve, 0));
     try {
       await persistence.writeSnapshot(snapshot);
       await persistence.writeMeta({
         variant,
+        role: snapshot.role ?? 'owner',
         snapshotDate: snapshot.snapshotDate,
       });
     } catch {

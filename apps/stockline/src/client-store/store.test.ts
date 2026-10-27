@@ -5,6 +5,7 @@ import {
   type Persistence,
 } from './idb';
 import { createStore, type StoreDeps } from './store';
+import { forRole } from './snapshot';
 import { openSyncChannel } from './sync';
 import { recordOp, seedSnapshot, TEST_NOW } from './testing';
 import type { StocklineVariant } from '../db/seed/generator';
@@ -176,5 +177,49 @@ describe('persistence', () => {
     expect(typeof indexedDB).toBe('undefined');
     const persistence: Persistence = await openPersistence();
     expect(persistence.kind).toBe('memory');
+  });
+});
+
+describe('roles', () => {
+  it('loads the staff copy without money, and the owner copy again, keeping the visitor ops', async () => {
+    const fetchSnapshot = vi.fn(
+      async (variant: string, role: 'owner' | 'staff') =>
+        forRole(seedSnapshot(variant as StocklineVariant, TEST_NOW), role),
+    );
+    const { store } = makeStore({ fetchSnapshot });
+    await store.load('minimart', 'owner');
+    await store.dispatch(recordOp(store.getState().snapshot!));
+
+    await store.load('minimart', 'staff');
+    expect(fetchSnapshot).toHaveBeenLastCalledWith('minimart', 'staff');
+    expect(store.getState().role).toBe('staff');
+    expect(JSON.stringify(store.getState().snapshot)).not.toMatch(
+      /costSatang|priceSatang|unitCostSatang/,
+    );
+    expect(store.getState().ops).toHaveLength(1);
+
+    await store.load('minimart', 'owner');
+    expect(fetchSnapshot).toHaveBeenLastCalledWith('minimart', 'owner');
+    expect(store.getState().snapshot!.items[0]).toHaveProperty('costSatang');
+  });
+
+  it('applies only the newest of two overlapping loads', async () => {
+    const fetchSnapshot = vi.fn(
+      async (variant: string, role: 'owner' | 'staff') => {
+        // The owner copy answers late, after the staff load has finished.
+        if (role === 'owner')
+          await new Promise((resolve) => setTimeout(resolve, 20));
+        return forRole(
+          seedSnapshot(variant as StocklineVariant, TEST_NOW),
+          role,
+        );
+      },
+    );
+    const { store } = makeStore({ fetchSnapshot });
+    const slow = store.load('minimart', 'owner');
+    await store.load('minimart', 'staff');
+    await slow;
+    expect(store.getState().role).toBe('staff');
+    expect(store.getState().snapshot!.role).toBe('staff');
   });
 });

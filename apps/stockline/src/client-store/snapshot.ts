@@ -26,9 +26,13 @@ export type TemplateRows = {
   auditEvents: Row[];
 };
 
+export type SnapshotRole = 'owner' | 'staff';
+
 export type Snapshot = TemplateRows & {
   schemaVersion: number;
   variant: string;
+  /** Whose copy this is. Staff get no money (`forRole`); copies stored before roles existed are the owner's. */
+  role?: SnapshotRole;
   /** The Bangkok day this snapshot's dates are relative to, `YYYY-MM-DD`. */
   snapshotDate: string;
   generatedAt: string;
@@ -192,4 +196,35 @@ export function toSnapshot(
   };
   // JSON round trip: dates become ISO strings and the result holds plain data only, as it does on the wire.
   return JSON.parse(JSON.stringify(snapshot)) as Snapshot;
+}
+
+/** Money columns: cost and sell price on items, unit cost on movements. Staff never receive them (02 §10). */
+const MONEY = ['costSatang', 'priceSatang', 'unitCostSatang'];
+
+function withoutMoney(row: Row): Row {
+  const out: Row = {};
+  for (const key in row) if (!MONEY.includes(key)) out[key] = row[key];
+  return out;
+}
+
+/**
+ * The copy a role receives. The owner gets the snapshot as it is; staff get it without money: no cost or sell price
+ * on items, no unit cost on movements, and no money in the change log (an event that only changed a price is left
+ * out). The role is chosen in the browser, so the server answers with the copy that role is allowed to see.
+ */
+export function forRole(snapshot: Snapshot, role: SnapshotRole): Snapshot {
+  if (role === 'owner') return { ...snapshot, role };
+  const auditEvents = snapshot.auditEvents.flatMap((event) => {
+    const diff = event.diff as Row | null | undefined;
+    if (!diff || typeof diff !== 'object') return [event];
+    const kept = withoutMoney(diff);
+    return Object.keys(kept).length > 0 ? [{ ...event, diff: kept }] : [];
+  });
+  return {
+    ...snapshot,
+    role,
+    items: snapshot.items.map(withoutMoney),
+    movements: snapshot.movements.map(withoutMoney),
+    auditEvents,
+  };
 }
