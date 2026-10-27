@@ -11,8 +11,16 @@ const ROUTES = [
   '/counts',
   '/history',
   '/import',
+  // The old address redirects to Settings › Suppliers.
   '/suppliers',
   '/settings',
+  '/settings/shop',
+  '/settings/users',
+  '/settings/categories',
+  '/settings/units',
+  '/settings/suppliers',
+  '/settings/stock',
+  '/settings/data',
 ];
 
 test('every route renders with one h1 in both languages', async ({ page }) => {

@@ -7,7 +7,16 @@ import {
 import { expect, test } from './fixtures';
 
 // th/en × light/dark × 390/1280 (platform §8) on the main screens, with axe and a screenshot each.
-const PAGES = ['', '/dashboard', '/items', '/reorder', '/history', '/counts'];
+const PAGES = [
+  '',
+  '/dashboard',
+  '/items',
+  '/reorder',
+  '/history',
+  '/counts',
+  '/settings',
+  '/settings/categories',
+];
 
 // Entrance animations fade rows in, and axe reads their mid-fade colours as low contrast. Reduced motion shows
 // the final colours at once; the colours themselves are the same with motion on.

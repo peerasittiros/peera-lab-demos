@@ -8,3 +8,6 @@ export const ROW_CAPS = {
   categories: 50,
   units: 50,
 } as const;
+
+/** Longest stored picture (a data URL of about 120 KB): the shop logo and item photos kept in the browser. */
+export const MAX_IMAGE_CHARS = 160_000;

@@ -290,6 +290,7 @@ export function ItemDetail({ id, locale }: { id: string; locale: Locale }) {
           supplierId: view.supplierId ?? '',
           location: view.location ?? '',
           openingQty: '',
+          imageUrl: view.imageUrl,
         }}
       />
       <div className="border-t border-line pt-5">

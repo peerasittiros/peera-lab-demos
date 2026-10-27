@@ -107,7 +107,12 @@ export async function saveItem(
   const row = toItemRow(fields, {
     sku: fields.sku ?? (existing ? String(existing.sku) : nextSku(store)),
     active: existing ? existing.active !== false : true,
-    imageUrl: existing?.imageUrl == null ? null : String(existing.imageUrl),
+    imageUrl:
+      fields.imageUrl !== undefined
+        ? fields.imageUrl
+        : existing?.imageUrl == null
+          ? null
+          : String(existing.imageUrl),
   });
   const ops: Op[] = [entitySave(store, options, role, 'item', itemId, row)];
   if (!existing && openingQty > 0) {
@@ -174,7 +179,6 @@ export async function setItemActive(
     : fail('write_failed', 'errors.unexpected');
 }
 
-
 export async function saveSupplier(
   store: Store,
   input: z.input<typeof Schemas.supplierInput>,
@@ -208,6 +212,10 @@ export async function saveSupplier(
     : fail('write_failed', 'errors.unexpected');
 }
 
+/**
+ * Saves the fields one settings page sends (Shop, Stock rules) over the current settings, so a page never clears
+ * another page's fields. The phone is stored as E.164, as suppliers' phones are.
+ */
 export async function saveSettings(
   store: Store,
   input: z.input<typeof Schemas.settingsFields>,
@@ -217,55 +225,197 @@ export async function saveSettings(
   if (denied) return denied;
   const parsed = (await loadSchemas()).settingsFields.safeParse(input);
   if (!parsed.success) return fail('invalid_input', 'errors.invalidInput');
-  const payload: Settings = parsed.data;
+  const current = store.getState().ledger?.settings;
+  if (!current) return fail('not_ready', 'errors.unexpected');
+  const { phone, shopNameEn, address, ...rest } = parsed.data;
+  let storedPhone = current.phone;
+  if (phone !== undefined) {
+    storedPhone = null;
+    if (phone) {
+      try {
+        storedPhone = formatPhone(phone, 'storage');
+      } catch {
+        return fail('phone_invalid', 'suppliers.form.phoneInvalid');
+      }
+    }
+  }
+  const defined = Object.fromEntries(
+    Object.entries(rest).filter(([, value]) => value !== undefined),
+  ) as Partial<Settings>;
+  const payload: Settings = {
+    ...current,
+    ...defined,
+    shopNameEn:
+      shopNameEn === undefined ? current.shopNameEn : shopNameEn || null,
+    address: address === undefined ? current.address : address || null,
+    phone: storedPhone,
+  };
   return (await dispatchAll(store, [settingsOp(store, role, payload)]))
     ? { ok: true as const, data: { saved: true } }
     : fail('write_failed', 'errors.unexpected');
 }
 
-export async function addCategory(
+/** Adds a category (last in the order) or renames one, keeping its place. */
+export async function saveCategory(
+  store: Store,
+  input: z.input<typeof Schemas.categoryInput>,
+  role: Role,
+) {
+  const denied = ownerOnly(role);
+  if (denied) return denied;
+  const parsed = (await loadSchemas()).categoryInput.safeParse(input);
+  if (!parsed.success) return fail('invalid_input', 'errors.invalidInput');
+  const { id, ...fields } = parsed.data;
+  const existing = id
+    ? store.getState().ledger?.entities.category[id]
+    : undefined;
+  if (id && !existing) return fail('not_found', 'errors.notFound');
+  if (!id && rowsOf(store, 'category').length >= ROW_CAPS.categories)
+    return fail('row_cap', 'errors.rowCap');
+  const categoryId = id ?? newId();
+  const sort = existing
+    ? Number(existing.sort ?? 0)
+    : nextSort(store, 'category');
+  return (await dispatchAll(store, [
+    entitySave(store, {}, role, 'category', categoryId, { ...fields, sort }),
+  ]))
+    ? { ok: true as const, data: { id: categoryId } }
+    : fail('write_failed', 'errors.unexpected');
+}
+
+/** Adds a unit (last in the order) or edits one. Symbols stay unique, ignoring case. */
+export async function saveUnit(
+  store: Store,
+  input: z.input<typeof Schemas.unitInput>,
+  role: Role,
+) {
+  const denied = ownerOnly(role);
+  if (denied) return denied;
+  const parsed = (await loadSchemas()).unitInput.safeParse(input);
+  if (!parsed.success) return fail('invalid_input', 'errors.invalidInput');
+  const { id, ...fields } = parsed.data;
+  const existing = id ? store.getState().ledger?.entities.unit[id] : undefined;
+  if (id && !existing) return fail('not_found', 'errors.notFound');
+  if (!id && rowsOf(store, 'unit').length >= ROW_CAPS.units)
+    return fail('row_cap', 'errors.rowCap');
+  const symbol = fields.symbol.toLowerCase();
+  if (
+    rowsOf(store, 'unit').some(
+      (row) => row.id !== id && String(row.symbol).toLowerCase() === symbol,
+    )
+  )
+    return fail('symbol_taken', 'errors.symbolTaken');
+  const unitId = id ?? newId();
+  const sort = existing ? Number(existing.sort ?? 0) : nextSort(store, 'unit');
+  return (await dispatchAll(store, [
+    entitySave(store, {}, role, 'unit', unitId, { ...fields, sort }),
+  ]))
+    ? { ok: true as const, data: { id: unitId } }
+    : fail('write_failed', 'errors.unexpected');
+}
+
+/** Earlier names, kept for callers that only add. */
+export const addCategory = (
   store: Store,
   input: z.input<typeof Schemas.namedFields>,
   role: Role,
-) {
-  const denied = ownerOnly(role);
-  if (denied) return denied;
-  const parsed = (await loadSchemas()).namedFields.safeParse(input);
-  if (!parsed.success) return fail('invalid_input', 'errors.invalidInput');
-  if (rowsOf(store, 'category').length >= ROW_CAPS.categories)
-    return fail('row_cap', 'errors.rowCap');
-  const id = newId();
-  const sort = rowsOf(store, 'category').length;
-  return (await dispatchAll(store, [
-    entitySave(store, {}, role, 'category', id, { ...parsed.data, sort }),
-  ]))
-    ? { ok: true as const, data: { id } }
-    : fail('write_failed', 'errors.unexpected');
-}
-
-export async function addUnit(
+) => saveCategory(store, input, role);
+export const addUnit = (
   store: Store,
   input: z.input<typeof Schemas.unitFields>,
+  role: Role,
+) => saveUnit(store, input, role);
+
+function nextSort(store: Store, kind: 'category' | 'unit') {
+  return rowsOf(store, kind).reduce(
+    (max, row) => Math.max(max, Number(row.sort ?? 0) + 1),
+    0,
+  );
+}
+
+/** Rows of a kind in their shown order: `sort`, then name (the order `categoryViews` and `unitViews` use). */
+function ordered(store: Store, kind: 'category' | 'unit') {
+  const thai = new Intl.Collator('th');
+  return rowsOf(store, kind).sort(
+    (a, b) =>
+      Number(a.sort ?? 0) - Number(b.sort ?? 0) ||
+      thai.compare(String(a.nameTh), String(b.nameTh)),
+  );
+}
+
+/**
+ * Moves a category or unit one place up or down. The whole list is renumbered 0…n-1 in its new order, so rows that
+ * shared a sort value (the sample units all start at 0) end up in a stable order.
+ */
+export async function moveRecord(
+  store: Store,
+  kind: 'category' | 'unit',
+  id: string,
+  direction: 'up' | 'down',
   role: Role,
 ) {
   const denied = ownerOnly(role);
   if (denied) return denied;
-  const parsed = (await loadSchemas()).unitFields.safeParse(input);
-  if (!parsed.success) return fail('invalid_input', 'errors.invalidInput');
-  if (rowsOf(store, 'unit').length >= ROW_CAPS.units)
-    return fail('row_cap', 'errors.rowCap');
-  const id = newId();
-  return (await dispatchAll(store, [
-    entitySave(store, {}, role, 'unit', id, parsed.data),
-  ]))
-    ? { ok: true as const, data: { id } }
+  const list = ordered(store, kind);
+  const from = list.findIndex((row) => row.id === id);
+  if (from < 0) return fail('not_found', 'errors.notFound');
+  const to = direction === 'up' ? from - 1 : from + 1;
+  if (to < 0 || to >= list.length)
+    return { ok: true as const, data: { position: from } };
+  const next = [...list];
+  [next[from], next[to]] = [next[to]!, next[from]!];
+  const ops = next.flatMap((row, index) =>
+    Number(row.sort ?? 0) === index
+      ? []
+      : [
+          entitySave(store, {}, role, kind, row.id, {
+            ...withoutId(row),
+            sort: index,
+          }),
+        ],
+  );
+  return (await dispatchAll(store, ops))
+    ? { ok: true as const, data: { position: to } }
     : fail('write_failed', 'errors.unexpected');
 }
 
-/** Removes a category or unit nobody uses. Items keep their history; a used one must be emptied first. */
+function withoutId(row: Record<string, unknown>) {
+  const { id: _id, ...rest } = row;
+  return rest;
+}
+
+/** Renames one of the sample people (owner or staff). */
+export async function saveUser(
+  store: Store,
+  input: z.input<typeof Schemas.userFields>,
+  role: Role,
+) {
+  const denied = ownerOnly(role);
+  if (denied) return denied;
+  const parsed = (await loadSchemas()).userFields.safeParse(input);
+  if (!parsed.success) return fail('invalid_input', 'errors.invalidInput');
+  if (!store.getState().ledger?.users[parsed.data.role])
+    return fail('not_found', 'errors.notFound');
+  return (await dispatchAll(store, [
+    {
+      id: newId(),
+      kind: 'user.save',
+      at: nowOf(store, {}),
+      role,
+      payload: parsed.data,
+    },
+  ]))
+    ? { ok: true as const, data: { role: parsed.data.role } }
+    : fail('write_failed', 'errors.unexpected');
+}
+
+/**
+ * Removes a category, unit or supplier nobody uses. Items keep their history; a used one must be emptied first
+ * (a supplier is in use while an item or an order names it).
+ */
 export async function removeMasterRecord(
   store: Store,
-  kind: 'category' | 'unit',
+  kind: 'category' | 'unit' | 'supplier',
   id: string,
   role: Role,
 ) {
@@ -277,6 +427,12 @@ export async function removeMasterRecord(
   if (kind === 'category') {
     if (items.some((row) => row.categoryId === id))
       return fail('category_in_use', 'errors.categoryInUse');
+  } else if (kind === 'supplier') {
+    if (
+      items.some((row) => row.supplierId === id) ||
+      Object.values(ledger.entities.order).some((row) => row.supplierId === id)
+    )
+      return fail('supplier_in_use', 'errors.supplierInUse');
   } else {
     const used =
       items.some(

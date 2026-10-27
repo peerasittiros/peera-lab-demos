@@ -10,8 +10,7 @@ const MORE: Record<'owner' | 'staff', string[]> = {
     'Dashboard',
     'Purchase orders',
     'Stock counts',
-    'Import',
-    'Suppliers',
+    // Import and Suppliers are reached from Settings.
     'Settings',
   ],
   staff: ['Purchase orders', 'Stock counts'],

@@ -3,13 +3,14 @@
 import { useDemoHref } from '@peera/demo-kit';
 import type { Locale } from '@peera/i18n';
 import { Button, cn, Field, Input, Select, toast, ts } from '@peera/ui';
-import { Plus, Trash2 } from 'lucide-react';
+import { Package, Plus, Trash2 } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { useState, type FormEvent } from 'react';
 import { saveItem } from '../client-store/master-commands';
 import { useStoreInstance } from '../client-store/hooks';
 import type { Named, SupplierRef, Unit } from '../domain/read-models';
 import { nameIn, translator } from '../i18n';
+import { ImageInput } from './ImageInput';
 
 export type ItemFormValues = {
   id?: string;
@@ -27,6 +28,8 @@ export type ItemFormValues = {
   supplierId: string;
   location: string;
   openingQty: string;
+  /** The photo: an upload (data URL), a sample photo path, or null for the icon tile. */
+  imageUrl: string | null;
 };
 
 const NONE = '__none__';
@@ -116,6 +119,7 @@ export function ItemForm({
       reorderQty: Math.round(numbers.reorderQty),
       supplierId: values.supplierId || null,
       location: values.location,
+      imageUrl: values.imageUrl,
     };
     const result = store
       ? await saveItem(
@@ -147,6 +151,15 @@ export function ItemForm({
       noValidate
       className="flex max-w-[48rem] flex-col gap-6"
     >
+      <ImageInput
+        locale={locale}
+        label={f.photo}
+        hint={f.photoHint}
+        value={values.imageUrl}
+        onChange={(value) => set('imageUrl', value)}
+        size={320}
+        placeholder={Package}
+      />
       <fieldset className="m-0 grid gap-4 border-0 p-0 md:grid-cols-2">
         <Field
           locale={locale}

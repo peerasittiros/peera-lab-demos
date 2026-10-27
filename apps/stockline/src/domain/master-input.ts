@@ -1,4 +1,5 @@
 import { z } from 'zod';
+import { MAX_IMAGE_CHARS } from './limits';
 
 // Input schemas for items, suppliers, categories, units and the shop settings. The server actions and the browser
 // commands (`client-store/master-commands.ts`) both check input with these, so they accept and reject the same things.
@@ -28,6 +29,20 @@ const money = z
   .default(null);
 const count = z.number().int().min(0).max(10_000_000);
 
+/**
+ * An uploaded picture as the browser stores it: a WebP (or, from older Safari, JPEG) data URL from
+ * `imageToDataUrl`, at most about 120 KB.
+ */
+export const imageDataUrl = z
+  .string()
+  .max(MAX_IMAGE_CHARS)
+  .regex(/^data:image\/(webp|jpeg);base64,[A-Za-z0-9+/]+=*$/);
+/** An item photo: an upload, or one of the sample photos under `/products/`. */
+const itemImage = z.union([
+  imageDataUrl,
+  z.string().regex(/^\/products\/[a-z0-9-]+\.webp$/),
+]);
+
 export const itemFields = z
   .object({
     nameTh: z.string().trim().min(1).max(120),
@@ -51,6 +66,8 @@ export const itemFields = z
     reorderQty: count.default(0),
     supplierId: z.uuid().nullable().default(null),
     location: optionalText(80),
+    // Undefined keeps the current photo; null removes it.
+    imageUrl: itemImage.nullable().optional(),
   })
   .superRefine((input, context) => {
     const units = input.packs.map((pack) => pack.unitId);
@@ -80,11 +97,24 @@ export const supplierFields = z.object({
   note: text(500),
 });
 
+/**
+ * Shop settings, saved a page at a time (Shop, Stock rules): a field left out keeps its current value, and null clears
+ * an optional one.
+ */
 export const settingsFields = z.object({
-  shopNameTh: z.string().trim().min(1).max(120),
-  shopNameEn: text(120),
-  lowStockRule: z.enum(['at_or_below_min', 'below_min']),
-  reorderWeekday: z.number().int().min(1).max(7),
+  shopNameTh: z.string().trim().min(1).max(120).optional(),
+  shopNameEn: z.string().trim().max(120).nullable().optional(),
+  lowStockRule: z.enum(['at_or_below_min', 'below_min']).optional(),
+  reorderWeekday: z.number().int().min(1).max(7).optional(),
+  logoUrl: imageDataUrl.nullable().optional(),
+  phone: z.string().trim().max(30).nullable().optional(),
+  address: z.string().trim().max(300).nullable().optional(),
+});
+
+/** A sample person's display name (owner or staff), as the account menu and history show it. */
+export const userFields = z.object({
+  role: z.enum(['owner', 'staff']),
+  displayName: z.string().trim().min(1).max(60),
 });
 
 export const namedFields = z.object({

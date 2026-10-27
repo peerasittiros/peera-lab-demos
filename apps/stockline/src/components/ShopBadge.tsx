@@ -48,16 +48,29 @@ export function ShopBadge({
   const name =
     (locale === 'en' && ledger.settings.shopNameEn) || ledger.settings.shopNameTh;
   const Logo = (variant && LOGOS[variant]) || Store;
+  const logoUrl = ledger.settings.logoUrl;
 
   return (
     <div className={cn('flex min-w-0 items-center gap-3', className)} title={compact ? name : undefined}>
-      <span
-        role="img"
-        aria-label={`${m.app.shopLogo} ${name}`}
-        className="flex size-10 shrink-0 items-center justify-center rounded-md bg-primary text-on-primary shadow-sm"
-      >
-        <Logo aria-hidden size={22} strokeWidth={1.75} />
-      </span>
+      {/* The logo the owner uploaded (Settings › Shop), else the trade's icon on the brand tile. */}
+      {logoUrl ? (
+        // eslint-disable-next-line @next/next/no-img-element -- a data URL from this browser; nothing to optimise
+        <img
+          src={logoUrl}
+          alt={`${m.app.shopLogo} ${name}`}
+          width={40}
+          height={40}
+          className="size-10 shrink-0 rounded-md border border-line object-cover shadow-sm"
+        />
+      ) : (
+        <span
+          role="img"
+          aria-label={`${m.app.shopLogo} ${name}`}
+          className="flex size-10 shrink-0 items-center justify-center rounded-md bg-primary text-on-primary shadow-sm"
+        >
+          <Logo aria-hidden size={22} strokeWidth={1.75} />
+        </span>
+      )}
       {compact ? null : (
         <span className={cn('grid min-w-0', railBelowLg && 'max-lg:hidden')}>
           <span className={cn(ts('ui', locale), 'truncate font-semibold text-ink')}>{name}</span>

@@ -5,6 +5,7 @@ import {
   settingsFields,
   supplierFields,
   unitFields,
+  userFields,
 } from '../domain/master-input';
 import { movementSchema } from '../domain/movement-input';
 
@@ -17,4 +18,9 @@ export const itemInput = createItemInput.and(
 export const supplierInput = supplierFields.and(
   z.object({ id: z.uuid().optional() }),
 );
-export { movementSchema, namedFields, settingsFields, unitFields };
+// Categories and units: an id edits that row, no id adds one.
+export const categoryInput = namedFields.and(
+  z.object({ id: z.uuid().optional() }),
+);
+export const unitInput = unitFields.and(z.object({ id: z.uuid().optional() }));
+export { movementSchema, namedFields, settingsFields, unitFields, userFields };

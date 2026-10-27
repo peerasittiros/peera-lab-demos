@@ -37,6 +37,8 @@ export type UnitView = {
   nameTh: string;
   nameEn: string | null;
   symbol: string;
+  /** The owner's order (Settings › Units); sample units start at 0 and sort by name. */
+  sort: number;
 };
 
 const str = (value: unknown) => (value == null ? null : String(value));
@@ -133,8 +135,9 @@ export function unitViews(ledger: Ledger): UnitView[] {
       nameTh: String(row.nameTh),
       nameEn: str(row.nameEn),
       symbol: String(row.symbol),
+      sort: Number(row.sort ?? 0),
     }))
-    .sort((a, b) => thai.compare(a.nameTh, b.nameTh));
+    .sort((a, b) => a.sort - b.sort || thai.compare(a.nameTh, b.nameTh));
 }
 
 /**

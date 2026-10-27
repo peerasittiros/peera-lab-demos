@@ -29,6 +29,11 @@ export type Settings = {
   shopNameEn: string | null;
   lowStockRule: 'at_or_below_min' | 'below_min';
   reorderWeekday: number;
+  /** The shop's logo as uploaded (a WebP data URL), or null for the trade icon. */
+  logoUrl: string | null;
+  /** E.164, as suppliers' phones are stored. */
+  phone: string | null;
+  address: string | null;
 };
 
 type OpBase = { id: string; at: string; role: Role };
@@ -68,13 +73,24 @@ export type EntityRemoveOp = OpBase & {
   payload: { entity: EntityKind; entityId: string };
 };
 
+/** The settings after a save. Ops stored before the shop details existed carry only the first four fields. */
 export type SettingsSaveOp = OpBase & {
   kind: 'settings.save';
-  payload: Settings;
+  payload: Partial<Settings> & Pick<Settings, 'shopNameTh'>;
+};
+
+/** Renames one of the sample people (the names on the account menu and in history). */
+export type UserSaveOp = OpBase & {
+  kind: 'user.save';
+  payload: { role: Role; displayName: string };
 };
 
 export type Op =
-  RecordMovementOp | EntitySaveOp | EntityRemoveOp | SettingsSaveOp;
+  | RecordMovementOp
+  | EntitySaveOp
+  | EntityRemoveOp
+  | SettingsSaveOp
+  | UserSaveOp;
 
 export type MovementRecord = {
   id: string;
@@ -142,7 +158,8 @@ export function ledgerFromSnapshot(snapshot: Snapshot): Ledger {
   // database needs no reseed for it.
   const items = snapshot.items.map((row) => ({
     ...row,
-    imageUrl: row.imageUrl ?? sampleImage(snapshot.variant, nullable(row.sku, String)),
+    imageUrl:
+      row.imageUrl ?? sampleImage(snapshot.variant, nullable(row.sku, String)),
     packs: packs.get(String(row.id)) ?? [],
   }));
 
@@ -220,6 +237,9 @@ export function ledgerFromSnapshot(snapshot: Snapshot): Ledger {
       shopNameEn: nullable(shop.shopNameEn, String),
       lowStockRule: shop.lowStockRule as Settings['lowStockRule'],
       reorderWeekday: Number(shop.reorderWeekday),
+      logoUrl: nullable(shop.logoUrl, String),
+      phone: nullable(shop.phone, String),
+      address: nullable(shop.address, String),
     },
     applied: {},
   };
@@ -351,11 +371,26 @@ export function applyOp(
       return {
         ledger: {
           ...ledger,
-          settings: op.payload,
+          // Merged, so an op written before a field existed keeps that field as it was.
+          settings: { ...ledger.settings, ...op.payload },
           applied: { ...ledger.applied, [op.id]: true },
         },
         outcome: 'applied',
       };
+    case 'user.save': {
+      const { role, displayName } = op.payload;
+      const user = ledger.users[role];
+      if (!user || typeof displayName !== 'string' || !displayName.trim())
+        return { ledger, outcome: 'skipped' };
+      return {
+        ledger: {
+          ...ledger,
+          users: { ...ledger.users, [role]: { ...user, displayName } },
+          applied: { ...ledger.applied, [op.id]: true },
+        },
+        outcome: 'applied',
+      };
+    }
     default:
       return { ledger, outcome: 'skipped' };
   }

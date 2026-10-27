@@ -28,7 +28,6 @@ import {
   ClipboardList,
   Ellipsis,
   ExternalLink,
-  FileUp,
   History,
   LayoutDashboard,
   Package,
@@ -37,7 +36,6 @@ import {
   RotateCcw,
   Settings,
   ShoppingCart,
-  Truck,
   type LucideIcon,
 } from 'lucide-react';
 import Link from 'next/link';
@@ -63,10 +61,9 @@ type NavKey =
   | 'orders'
   | 'counts'
   | 'history'
-  | 'import'
-  | 'suppliers'
   | 'settings';
 
+// Suppliers and Import are reached from Settings (Items and master data, Data), as in production apps.
 const NAV: { key: NavKey; path: string; icon: LucideIcon; owner?: true }[] = [
   { key: 'quickMove', path: '', icon: ArrowLeftRight },
   { key: 'dashboard', path: '/dashboard', icon: LayoutDashboard, owner: true },
@@ -75,8 +72,6 @@ const NAV: { key: NavKey; path: string; icon: LucideIcon; owner?: true }[] = [
   { key: 'orders', path: '/orders', icon: ClipboardList },
   { key: 'counts', path: '/counts', icon: ClipboardCheck },
   { key: 'history', path: '/history', icon: History },
-  { key: 'import', path: '/import', icon: FileUp, owner: true },
-  { key: 'suppliers', path: '/suppliers', icon: Truck, owner: true },
   { key: 'settings', path: '/settings', icon: Settings, owner: true },
 ];
 

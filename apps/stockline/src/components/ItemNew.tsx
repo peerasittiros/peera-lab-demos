@@ -36,6 +36,7 @@ export function ItemNew({
         supplierId: '',
         location: '',
         openingQty: '',
+        imageUrl: null,
       }}
     />
   );

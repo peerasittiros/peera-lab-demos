@@ -4,15 +4,26 @@ import {
   addCategory,
   addUnit,
   importRows,
+  moveRecord,
   removeMasterRecord,
+  saveCategory,
   saveItem,
   saveSettings,
   saveSupplier,
+  saveUnit,
+  saveUser,
   setItemActive,
 } from './master-commands';
 import { createStore, type Store } from './store';
 import { seedSnapshot, TEST_NOW } from './testing';
-import { changeViews, filterItems, itemViews, searchViews } from './views';
+import {
+  categoryViews,
+  changeViews,
+  filterItems,
+  itemViews,
+  searchViews,
+  unitViews,
+} from './views';
 import type { ImportRow } from '../domain/import';
 
 let store: Store;
@@ -256,7 +267,7 @@ describe('categories and units', () => {
   it('adds a unit with its symbol', async () => {
     const added = await addUnit(
       store,
-      { nameTh: 'กล่อง', nameEn: 'box', symbol: 'box' },
+      { nameTh: 'ถาด', nameEn: 'tray', symbol: 'tray' },
       'owner',
     );
     expect(added.ok).toBe(true);
@@ -348,5 +359,215 @@ describe('change history', () => {
     expect(
       searchViews(views, 'ชื่อพิเศษ').some((view) => view.id === target.id),
     ).toBe(true);
+  });
+});
+
+describe('settings pages: categories, units, suppliers, people, shop', () => {
+  const tinyWebp =
+    'data:image/webp;base64,UklGRiQAAABXRUJQVlA4IBgAAAAwAQCdASoBAAEAAwA0JaQAA3AA/vuUAAA=';
+  const ids = (kind: 'category' | 'unit') =>
+    (kind === 'category' ? categoryViews(ledger()) : unitViews(ledger())).map(
+      (entry) => entry.id,
+    );
+
+  it('renames a category and keeps its place', async () => {
+    const [first, second] = categoryViews(ledger());
+    const result = await saveCategory(
+      store,
+      { id: second!.id, nameTh: 'ชื่อใหม่', nameEn: 'Renamed' },
+      'owner',
+    );
+    expect(result.ok).toBe(true);
+    const after = categoryViews(ledger());
+    expect(after[0]!.id).toBe(first!.id);
+    expect(after[1]).toMatchObject({
+      id: second!.id,
+      nameTh: 'ชื่อใหม่',
+      nameEn: 'Renamed',
+    });
+  });
+
+  it('adds a new category last', async () => {
+    const result = await saveCategory(
+      store,
+      { nameTh: 'หมวดใหม่', nameEn: '' },
+      'owner',
+    );
+    expect(result.ok).toBe(true);
+    expect(categoryViews(ledger()).at(-1)?.nameTh).toBe('หมวดใหม่');
+  });
+
+  it('edits a unit, and refuses a short form another unit uses', async () => {
+    const [first, second] = unitViews(ledger());
+    const clash = await saveUnit(
+      store,
+      {
+        id: first!.id,
+        nameTh: first!.nameTh,
+        nameEn: first!.nameEn ?? '',
+        symbol: second!.symbol.toUpperCase(),
+      },
+      'owner',
+    );
+    expect(clash).toMatchObject({ ok: false, error: { code: 'symbol_taken' } });
+    const edited = await saveUnit(
+      store,
+      {
+        id: first!.id,
+        nameTh: 'ขวดแก้ว',
+        nameEn: 'Glass bottle',
+        symbol: 'gb',
+      },
+      'owner',
+    );
+    expect(edited.ok).toBe(true);
+    expect(
+      unitViews(ledger()).find((entry) => entry.id === first!.id),
+    ).toMatchObject({ nameTh: 'ขวดแก้ว', symbol: 'gb' });
+  });
+
+  it('moves a category up and down, and stays put at either end', async () => {
+    const before = ids('category');
+    const down = await moveRecord(
+      store,
+      'category',
+      before[0]!,
+      'down',
+      'owner',
+    );
+    expect(down).toMatchObject({ ok: true, data: { position: 1 } });
+    expect(ids('category').slice(0, 2)).toEqual([before[1], before[0]]);
+    const up = await moveRecord(store, 'category', before[0]!, 'up', 'owner');
+    expect(up).toMatchObject({ ok: true, data: { position: 0 } });
+    expect(ids('category')).toEqual(before);
+    const top = await moveRecord(store, 'category', before[0]!, 'up', 'owner');
+    expect(top).toMatchObject({ ok: true, data: { position: 0 } });
+    expect(ids('category')).toEqual(before);
+  });
+
+  it('gives units a stable order the first time one moves (the sample units share sort 0)', async () => {
+    const before = ids('unit');
+    await moveRecord(store, 'unit', before[2]!, 'up', 'owner');
+    expect(ids('unit')).toEqual([
+      before[0],
+      before[2],
+      before[1],
+      ...before.slice(3),
+    ]);
+    const sorts = unitViews(ledger()).map((entry) => entry.sort);
+    expect(sorts).toEqual(sorts.map((_, index) => index));
+  });
+
+  it('removes an unused supplier, and refuses one an item uses', async () => {
+    const used = String(
+      Object.values(ledger().entities.item).find((row) => row.supplierId)!
+        .supplierId,
+    );
+    expect(
+      await removeMasterRecord(store, 'supplier', used, 'owner'),
+    ).toMatchObject({ ok: false, error: { code: 'supplier_in_use' } });
+    const added = await saveSupplier(
+      store,
+      { name: 'ร้านใหม่', leadTimeDays: 1 },
+      'owner',
+    );
+    if (!added.ok) throw new Error('supplier not added');
+    const removed = await removeMasterRecord(
+      store,
+      'supplier',
+      added.data.id,
+      'owner',
+    );
+    expect(removed.ok).toBe(true);
+    expect(ledger().entities.supplier[added.data.id]).toBeUndefined();
+  });
+
+  it('renames a person, owner only', async () => {
+    const asStaff = await saveUser(
+      store,
+      { role: 'staff', displayName: 'น้องเมย์' },
+      'staff',
+    );
+    expect(asStaff.ok).toBe(false);
+    const asOwner = await saveUser(
+      store,
+      { role: 'staff', displayName: 'น้องเมย์' },
+      'owner',
+    );
+    expect(asOwner.ok).toBe(true);
+    expect(ledger().users.staff.displayName).toBe('น้องเมย์');
+  });
+
+  it('saves the shop page without touching the stock rules, and the other way round', async () => {
+    await saveSettings(
+      store,
+      { lowStockRule: 'below_min', reorderWeekday: 3 },
+      'owner',
+    );
+    const shop = await saveSettings(
+      store,
+      {
+        shopNameTh: 'ร้านทดสอบ',
+        phone: '081-234-5678',
+        address: 'ซอย 1',
+        logoUrl: tinyWebp,
+      },
+      'owner',
+    );
+    expect(shop.ok).toBe(true);
+    expect(ledger().settings).toMatchObject({
+      shopNameTh: 'ร้านทดสอบ',
+      phone: '+66812345678',
+      address: 'ซอย 1',
+      logoUrl: tinyWebp,
+      lowStockRule: 'below_min',
+      reorderWeekday: 3,
+    });
+    await saveSettings(store, { lowStockRule: 'at_or_below_min' }, 'owner');
+    expect(ledger().settings.logoUrl).toBe(tinyWebp);
+    await saveSettings(store, { logoUrl: null }, 'owner');
+    expect(ledger().settings.logoUrl).toBeNull();
+  });
+
+  it('refuses a logo that is not a small WebP or JPEG data URL, and a bad phone', async () => {
+    for (const logoUrl of [
+      'https://example.com/logo.png',
+      'data:image/png;base64,AAAA',
+      `data:image/webp;base64,${'A'.repeat(170_000)}`,
+    ]) {
+      const result = await saveSettings(store, { logoUrl }, 'owner');
+      expect(result.ok).toBe(false);
+    }
+    expect(await saveSettings(store, { phone: '12' }, 'owner')).toMatchObject({
+      ok: false,
+      error: { code: 'phone_invalid' },
+    });
+  });
+
+  it('stores an item photo, keeps it on later edits and removes it on null', async () => {
+    const created = await saveItem(
+      store,
+      itemInput({ imageUrl: tinyWebp }),
+      'owner',
+    );
+    if (!created.ok) throw new Error('not created');
+    const id = created.data.id;
+    expect(ledger().entities.item[id]!.imageUrl).toBe(tinyWebp);
+    await saveItem(store, { ...itemInput({ nameTh: 'แก้ชื่อ' }), id }, 'owner');
+    expect(ledger().entities.item[id]!.imageUrl).toBe(tinyWebp);
+    await saveItem(store, { ...itemInput({ imageUrl: null }), id }, 'owner');
+    expect(ledger().entities.item[id]!.imageUrl).toBeNull();
+  });
+
+  it('keeps every settings command owner only', async () => {
+    const [category] = categoryViews(ledger());
+    const results = [
+      await saveCategory(store, { nameTh: 'x', nameEn: '' }, 'staff'),
+      await saveUnit(store, { nameTh: 'x', nameEn: '', symbol: 'zz' }, 'staff'),
+      await moveRecord(store, 'category', category!.id, 'down', 'staff'),
+      await saveSettings(store, { shopNameTh: 'x' }, 'staff'),
+    ];
+    for (const result of results)
+      expect(result).toMatchObject({ ok: false, error: { code: 'forbidden' } });
   });
 });

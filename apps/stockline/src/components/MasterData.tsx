@@ -6,7 +6,6 @@ import {
   cn,
   Field,
   Input,
-  Select,
   Sheet,
   SheetContent,
   SheetDescription,
@@ -19,17 +18,12 @@ import { Pencil, Plus, Trash2 } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { useState, type FormEvent } from 'react';
 import {
-  addCategory,
-  addUnit,
   removeMasterRecord,
-  saveSettings,
   saveSupplier,
 } from '../client-store/master-commands';
 import { useStoreInstance } from '../client-store/hooks';
-import type { Settings as ShopSettings } from '../client-store/ops';
 import type { SupplierView } from '../client-store/views';
-import { nameIn, translator, weekdayName } from '../i18n';
-import { ChipGroup } from './ChipGroup';
+import { translator } from '../i18n';
 
 function displayPhone(phone: string | null) {
   if (!phone) return '';
@@ -40,7 +34,7 @@ function displayPhone(phone: string | null) {
   }
 }
 
-/** Add or edit a supplier in a sheet (02 §3.1 item 10). */
+/** Add, edit or remove a supplier in a sheet (02 §3.1 item 10). A supplier in use cannot be removed. */
 export function SupplierEditor({
   locale,
   supplier,
@@ -55,7 +49,31 @@ export function SupplierEditor({
   const f = m.suppliers.form;
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [saving, setSaving] = useState(false);
+  const [removing, setRemoving] = useState(false);
   const store = useStoreInstance();
+
+  const remove = async () => {
+    if (!store || !supplier) return;
+    setRemoving(true);
+    const result = await removeMasterRecord(
+      store,
+      'supplier',
+      supplier.id,
+      'owner',
+    );
+    setRemoving(false);
+    if (result.ok) {
+      toast({ title: m.settings.removed });
+      setOpen(false);
+      return;
+    }
+    // Inside the sheet: while it is open, everything behind it (the toasts too) is hidden from screen readers.
+    setErrors({
+      remove: t(
+        (result.error.messageKey ?? 'errors.unexpected') as 'errors.unexpected',
+      ),
+    });
+  };
 
   const submit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
@@ -207,293 +225,29 @@ export function SupplierEditor({
               >
                 {m.common.save}
               </Button>
+              {supplier ? (
+                <Button
+                  locale={locale}
+                  variant="ghost"
+                  loading={removing}
+                  onClick={() => void remove()}
+                >
+                  <Trash2 aria-hidden size={16} strokeWidth={1.75} />
+                  {m.common.remove}
+                </Button>
+              ) : null}
             </div>
+            {errors.remove ? (
+              <p
+                role="alert"
+                className={cn(ts('body-sm', locale), 'm-0 text-danger')}
+              >
+                {errors.remove}
+              </p>
+            ) : null}
           </form>
         </SheetContent>
       </Sheet>
     </>
-  );
-}
-
-export function ShopSettingsForm({
-  locale,
-  settings,
-}: {
-  locale: Locale;
-  settings: ShopSettings;
-}) {
-  const { m } = translator(locale);
-  const router = useRouter();
-  const [values, setValues] = useState({
-    shopNameTh: settings.shopNameTh,
-    shopNameEn: settings.shopNameEn ?? '',
-    lowStockRule: settings.lowStockRule as string,
-    reorderWeekday: String(settings.reorderWeekday),
-  });
-  const [error, setError] = useState<string | null>(null);
-  const [saving, setSaving] = useState(false);
-  const store = useStoreInstance();
-  const s = m.settings;
-
-  const submit = async (event: FormEvent) => {
-    event.preventDefault();
-    if (!values.shopNameTh.trim()) {
-      setError(m.errors.nameRequired);
-      return;
-    }
-    setSaving(true);
-    const result = store
-      ? await saveSettings(
-          store,
-          {
-            shopNameTh: values.shopNameTh,
-            shopNameEn: values.shopNameEn,
-            lowStockRule: values.lowStockRule as 'at_or_below_min',
-            reorderWeekday: Number(values.reorderWeekday),
-          },
-          'owner',
-        )
-      : null;
-    setSaving(false);
-    toast({ title: result?.ok ? s.saved : m.errors.unexpected });
-    router.refresh();
-  };
-
-  return (
-    <form
-      onSubmit={submit}
-      noValidate
-      className="flex max-w-[40rem] flex-col gap-4"
-    >
-      <Field
-        locale={locale}
-        label={s.shopNameTh}
-        required
-        error={error ?? undefined}
-      >
-        <Input
-          lang="th"
-          value={values.shopNameTh}
-          maxLength={120}
-          onChange={(event) =>
-            setValues({ ...values, shopNameTh: event.target.value })
-          }
-        />
-      </Field>
-      <Field locale={locale} label={`${s.shopNameEn} (${m.common.optional})`}>
-        <Input
-          lang="en"
-          value={values.shopNameEn}
-          maxLength={120}
-          onChange={(event) =>
-            setValues({ ...values, shopNameEn: event.target.value })
-          }
-        />
-      </Field>
-      <ChipGroup
-        locale={locale}
-        legend={s.lowStockRule}
-        value={values.lowStockRule}
-        onChange={(value) => setValues({ ...values, lowStockRule: value })}
-        chips={[
-          { value: 'at_or_below_min', label: s.ruleAtOrBelow },
-          { value: 'below_min', label: s.ruleBelow },
-        ]}
-      />
-      <Field
-        locale={locale}
-        label={s.reorderDay}
-        hint={s.reorderDayHint}
-        className="max-w-[16rem]"
-      >
-        <Select
-          locale={locale}
-          value={values.reorderWeekday}
-          onValueChange={(value) =>
-            setValues({ ...values, reorderWeekday: value })
-          }
-          options={[1, 2, 3, 4, 5, 6, 7].map((day) => ({
-            value: String(day),
-            label: weekdayName(locale, day),
-          }))}
-        />
-      </Field>
-      <div>
-        <Button
-          locale={locale}
-          type="submit"
-          variant="primary"
-          loading={saving}
-        >
-          {s.saveShop}
-        </Button>
-      </div>
-    </form>
-  );
-}
-
-type Record_ = {
-  id: string;
-  nameTh: string;
-  nameEn: string | null;
-  symbol?: string;
-  uses: number;
-};
-
-/** Categories or units: a list with usage counts, an add row, and remove for unused ones. */
-export function MasterList({
-  locale,
-  kind,
-  records,
-}: {
-  locale: Locale;
-  kind: 'category' | 'unit';
-  records: Record_[];
-}) {
-  const { t, tp, m } = translator(locale);
-  const router = useRouter();
-  const s = m.settings;
-  const [draft, setDraft] = useState({ nameTh: '', nameEn: '', symbol: '' });
-  const [busy, setBusy] = useState<string | null>(null);
-  const store = useStoreInstance();
-
-  const add = async (event: FormEvent) => {
-    event.preventDefault();
-    if (!draft.nameTh.trim() || (kind === 'unit' && !draft.symbol.trim())) {
-      toast({ title: m.errors.nameRequired });
-      return;
-    }
-    setBusy('add');
-    const result = !store
-      ? null
-      : kind === 'category'
-        ? await addCategory(
-            store,
-            { nameTh: draft.nameTh, nameEn: draft.nameEn },
-            'owner',
-          )
-        : await addUnit(
-            store,
-            {
-              nameTh: draft.nameTh,
-              nameEn: draft.nameEn,
-              symbol: draft.symbol,
-            },
-            'owner',
-          );
-    setBusy(null);
-    if (!result || !result.ok) {
-      toast({
-        title: t(
-          (result?.error.messageKey ??
-            'errors.unexpected') as 'errors.unexpected',
-        ),
-      });
-      return;
-    }
-    toast({ title: kind === 'category' ? s.categoryAdded : s.unitAdded });
-    setDraft({ nameTh: '', nameEn: '', symbol: '' });
-    router.refresh();
-  };
-
-  const remove = async (id: string) => {
-    setBusy(id);
-    const result = store
-      ? await removeMasterRecord(store, kind, id, 'owner')
-      : null;
-    setBusy(null);
-    toast({
-      title: result?.ok
-        ? s.removed
-        : t(
-            (result?.error.messageKey ??
-              'errors.unexpected') as 'errors.unexpected',
-          ),
-    });
-    router.refresh();
-  };
-
-  return (
-    <div className="flex flex-col gap-4">
-      <ul className="m-0 flex list-none flex-col divide-y divide-line rounded-sm border border-line bg-surface-raised p-0">
-        {records.map((record) => (
-          <li
-            key={record.id}
-            className="flex flex-wrap items-center justify-between gap-3 px-3 py-2"
-          >
-            <span className="flex min-w-0 flex-col">
-              <span className={cn(ts('ui', locale), 'text-ink')}>
-                {nameIn(record, locale)}
-                {record.symbol ? (
-                  <span className="code text-ink-muted">{` · ${record.symbol}`}</span>
-                ) : null}
-              </span>
-              <span className={cn(ts('body-sm', locale), 'text-ink-muted')}>
-                {tp('settings.inUse', record.uses)}
-              </span>
-            </span>
-            {record.uses === 0 ? (
-              <Button
-                locale={locale}
-                variant="ghost"
-                size="sm"
-                loading={busy === record.id}
-                aria-label={`${m.common.remove} ${nameIn(record, locale)}`}
-                onClick={() => void remove(record.id)}
-              >
-                <Trash2 aria-hidden size={16} strokeWidth={1.75} />
-                {m.common.remove}
-              </Button>
-            ) : null}
-          </li>
-        ))}
-      </ul>
-      <form onSubmit={add} className="flex flex-wrap items-end gap-3">
-        <Field locale={locale} label={s.nameTh} className="min-w-[9rem] flex-1">
-          <Input
-            lang="th"
-            value={draft.nameTh}
-            maxLength={60}
-            onChange={(event) =>
-              setDraft({ ...draft, nameTh: event.target.value })
-            }
-          />
-        </Field>
-        <Field
-          locale={locale}
-          label={`${s.nameEn} (${m.common.optional})`}
-          className="min-w-[9rem] flex-1"
-        >
-          <Input
-            lang="en"
-            value={draft.nameEn}
-            maxLength={60}
-            onChange={(event) =>
-              setDraft({ ...draft, nameEn: event.target.value })
-            }
-          />
-        </Field>
-        {kind === 'unit' ? (
-          <Field locale={locale} label={s.symbol} className="w-28">
-            <Input
-              value={draft.symbol}
-              maxLength={12}
-              onChange={(event) =>
-                setDraft({ ...draft, symbol: event.target.value })
-              }
-            />
-          </Field>
-        ) : null}
-        <Button
-          locale={locale}
-          type="submit"
-          variant="secondary"
-          loading={busy === 'add'}
-        >
-          <Plus aria-hidden size={16} strokeWidth={1.75} />
-          {kind === 'category' ? s.addCategory : s.addUnit}
-        </Button>
-      </form>
-    </div>
   );
 }
