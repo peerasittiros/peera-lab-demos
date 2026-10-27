@@ -12,8 +12,12 @@ test('reorder → mark as ordered → receive in two deliveries', async ({
   await page.goto('/en/reorder');
   await expect(page.getByRole('heading', { level: 1 })).toHaveText('Reorder');
 
-  // Keep only the first supplier's items selected.
-  const groups = page.locator('main section[lang]');
+  // Keep only the first supplier's items selected. The heading renders before the data, so wait for the groups;
+  // the tour card (a section too, in the server HTML until the store sees it was dismissed) is not one of them.
+  const groups = page.locator('main section[lang]:not([role="dialog"])');
+  await expect(
+    groups.first().getByRole('checkbox', { name: /Select all from/ }),
+  ).toBeVisible();
   const firstSupplier = (
     await groups.first().getByRole('heading', { level: 2 }).innerText()
   ).trim();
