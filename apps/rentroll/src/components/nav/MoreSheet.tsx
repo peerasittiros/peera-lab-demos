@@ -1,12 +1,10 @@
 'use client';
 
+import { kitStrings, newTabHref, useEmbedded } from '@peera/demo-kit';
 import type { Locale } from '@peera/i18n';
 import {
   Button,
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogTitle,
+  SegmentedControl,
   SheetContent,
   SheetDescription,
   SheetTitle,
@@ -15,17 +13,17 @@ import {
   Sheet,
   ts,
 } from '@peera/ui';
+import { ExternalLink, RotateCcw } from 'lucide-react';
 import Link from 'next/link';
-import { useRouter } from 'next/navigation';
 import { useEffect, useState } from 'react';
 import { InstallButton } from '@/src/components/pwa/InstallButton';
-import { getStore } from '@/src/client-store/instance';
+import type { Role } from '@/src/client-store/schema';
 import type { Messages } from '@/messages';
 import { isNavActive, type NavItem } from './nav-config';
 
 /**
- * "More" (SPEC §3): every section the bottom bar doesn't show, then the language, the theme and a reset of the sample
- * data. The sheet is bottom-anchored on phones and a side panel from 768px.
+ * "More" on phones (SPEC §3): every section the bottom bar doesn't show, then what the account menu holds on larger
+ * screens (role, language), the theme and the demo's reset. The sheet is bottom-anchored.
  */
 export function MoreSheet({
   locale,
@@ -34,6 +32,9 @@ export function MoreSheet({
   sections,
   open,
   onOpenChange,
+  role,
+  onRoleChange,
+  onReset,
 }: {
   locale: Locale;
   m: Messages;
@@ -41,10 +42,13 @@ export function MoreSheet({
   sections: NavItem[];
   open: boolean;
   onOpenChange: (open: boolean) => void;
+  role: Role;
+  onRoleChange: (role: string) => void;
+  onReset: () => void;
 }) {
   const other: Locale = locale === 'th' ? 'en' : 'th';
   const languageHref = `/${other}${pathname.slice(`/${locale}`.length)}`;
-  const [resetOpen, setResetOpen] = useState(false);
+  const embedded = useEmbedded();
 
   return (
     <Sheet open={open} onOpenChange={onOpenChange}>
@@ -86,6 +90,26 @@ export function MoreSheet({
         </nav>
 
         <div className="mt-4 flex flex-col gap-3 border-t border-line pt-4">
+          <div className="grid gap-2">
+            <span className={cn(ts('ui', locale), 'text-ink-muted')}>
+              {m.nav.role}
+            </span>
+            <SegmentedControl
+              locale={locale}
+              fullWidth
+              aria-label={m.nav.role}
+              value={role}
+              onValueChange={(next) => {
+                onOpenChange(false);
+                onRoleChange(next);
+              }}
+              options={[
+                { value: 'owner', label: m.rolesShort.owner },
+                { value: 'caretaker', label: m.rolesShort.caretaker },
+                { value: 'tenant', label: m.rolesShort.tenant },
+              ]}
+            />
+          </div>
           <div className="flex items-center justify-between gap-3">
             <span className={ts('ui', locale)}>{m.nav.language}</span>
             <Link
@@ -105,26 +129,41 @@ export function MoreSheet({
             <InstallButton locale={locale} />
           </div>
           <ThemeChoice locale={locale} m={m} />
-          <div className="flex items-center justify-between gap-3">
-            <span className={ts('ui', locale)}>{m.nav.resetDemo}</span>
+          <Button
+            locale={locale}
+            variant="ghost"
+            className="justify-start"
+            onClick={() => {
+              onOpenChange(false);
+              onReset();
+            }}
+          >
+            <RotateCcw aria-hidden size={16} strokeWidth={1.75} />
+            {kitStrings[locale].reset}
+          </Button>
+          {embedded ? (
             <Button
               locale={locale}
               variant="ghost"
-              size="md"
-              onClick={() => setResetOpen(true)}
+              className="justify-start"
+              onClick={() => {
+                const theme =
+                  document.documentElement.dataset.theme === 'dark'
+                    ? 'dark'
+                    : 'light';
+                window.open(
+                  newTabHref(window.location.href, locale, theme),
+                  '_blank',
+                  'noopener',
+                );
+              }}
             >
-              {m.nav.resetDemo}
+              <ExternalLink aria-hidden size={16} strokeWidth={1.75} />
+              {kitStrings[locale].openInNewTab}
             </Button>
-          </div>
+          ) : null}
         </div>
       </SheetContent>
-
-      <ResetSampleData
-        locale={locale}
-        m={m}
-        open={resetOpen}
-        onOpenChange={setResetOpen}
-      />
     </Sheet>
   );
 }
@@ -186,58 +225,5 @@ function ThemeChoice({ locale, m }: { locale: Locale; m: Messages }) {
         ))}
       </div>
     </div>
-  );
-}
-
-/** The reset confirmation. Reset deletes this device's changes, then the page reloads on the fresh sample data. */
-function ResetSampleData({
-  locale,
-  m,
-  open,
-  onOpenChange,
-}: {
-  locale: Locale;
-  m: Messages;
-  open: boolean;
-  onOpenChange: (open: boolean) => void;
-}) {
-  const router = useRouter();
-  const [busy, setBusy] = useState(false);
-
-  async function reset() {
-    setBusy(true);
-    try {
-      await getStore().reset();
-      router.refresh();
-      window.location.reload();
-    } finally {
-      setBusy(false);
-    }
-  }
-
-  return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent locale={locale}>
-        <DialogTitle locale={locale}>{m.nav.resetTitle}</DialogTitle>
-        <DialogDescription locale={locale}>{m.nav.resetBody}</DialogDescription>
-        <div className="mt-6 flex justify-end gap-2">
-          <Button
-            locale={locale}
-            variant="ghost"
-            onClick={() => onOpenChange(false)}
-          >
-            {m.common.cancel}
-          </Button>
-          <Button
-            locale={locale}
-            variant="danger"
-            disabled={busy}
-            onClick={reset}
-          >
-            {m.nav.resetConfirm}
-          </Button>
-        </div>
-      </DialogContent>
-    </Dialog>
   );
 }

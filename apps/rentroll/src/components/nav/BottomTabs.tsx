@@ -8,7 +8,7 @@ import { isNavActive, type NavItem, type NavKey } from './nav-config';
 import type { Messages } from '@/messages';
 
 /**
- * The bottom tab bar below 1024px (DESIGN.md §5): up to four items with icon and label, then "More". Safe-area padding
+ * The bottom tab bar below 768px (DESIGN.md §5): up to four items with icon and label, then "More". Safe-area padding
  * keeps it clear of the home indicator. Each item is at least 44px tall.
  */
 export function BottomTabs({
@@ -29,7 +29,7 @@ export function BottomTabs({
   return (
     <nav
       aria-label={m.nav.label}
-      className="fixed inset-x-0 bottom-0 z-30 border-t border-line bg-surface-raised shadow-(--shadow-md) pb-[env(safe-area-inset-bottom)] lg:hidden print:hidden"
+      className="fixed inset-x-0 bottom-0 z-30 border-t border-line bg-surface-raised shadow-(--shadow-md) pb-[env(safe-area-inset-bottom)] md:hidden print:hidden"
     >
       <ul className="mx-auto grid max-w-xl grid-cols-5">
         {tabs.map((item) => (

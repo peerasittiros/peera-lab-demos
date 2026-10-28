@@ -9,7 +9,6 @@ import type { ReactNode } from 'react';
 import { messages } from '@/messages';
 import { AppShell } from '@/src/components/AppShell';
 import { LangSync } from '@/src/components/LangSync';
-import { env } from '@/src/env';
 
 export function generateStaticParams() {
   return locales.map((locale) => ({ locale }));
@@ -52,7 +51,7 @@ export default async function LocaleLayout({
         via={session?.via ?? 'cookie'}
       >
         <ToastProvider locale={locale}>
-          <AppShell locale={locale} siteUrl={env.PEERA_LAB_URL}>
+          <AppShell locale={locale}>
             {children}
           </AppShell>
         </ToastProvider>

@@ -5,7 +5,22 @@ export const th: typeof en = {
   meta: {
     title: 'Rentroll: ห้องพัก บิล และการซ่อมของอาคารคุณ',
   },
-  app: { name: 'Rentroll' },
+  app: {
+    name: 'Rentroll',
+    samplePlace: 'ที่พักตัวอย่าง',
+    placeLogo: 'โลโก้ของ',
+  },
+  account: {
+    menu: 'บัญชี',
+    switchUser: 'สลับผู้ใช้',
+    demo: 'เดโม',
+    sampleAccount: 'บัญชีตัวอย่าง',
+    thai: 'ภาษาไทย',
+    english: 'English',
+    room: 'ห้อง {room}',
+    tenantRoom: 'ผู้เช่า · ห้อง {room}',
+  },
+  rolesShort: { owner: 'เจ้าของ', caretaker: 'ผู้ดูแล', tenant: 'ผู้เช่า' },
   roles: { owner: 'เจ้าของอาคาร', caretaker: 'ผู้ดูแล', tenant: 'ผู้เช่า' },
   nav: {
     label: 'เมนูหลัก',
@@ -43,16 +58,12 @@ export const th: typeof en = {
     theme: 'ธีม',
     themeLight: 'สว่าง',
     themeDark: 'มืด',
-    resetDemo: 'รีเซ็ตข้อมูลตัวอย่าง',
-    demoActions: 'ทดลองฟังก์ชัน',
-    demoActionsSoon: 'เปิดใช้หลังอัปเดตรอบถัดไป',
-    simulateReminders: 'จำลองการแจ้งเตือนค้างชำระ',
-    simulateSendAll: 'จำลองการส่งบิลทั้งหมด',
-    openTenant: 'เปิดดูผู้เช่า A-305',
-    showReceived: 'ดูข้อความที่ผู้เช่าได้รับ',
-    resetTitle: 'รีเซ็ตข้อมูลตัวอย่างใช่ไหม',
-    resetBody: 'การแก้ไขของคุณบนเครื่องนี้จะถูกลบ และอาคารตัวอย่างจะเริ่มใหม่',
-    resetConfirm: 'รีเซ็ต',
+    groups: {
+      month: 'รอบเดือนนี้',
+      people: 'ห้องและผู้เช่า',
+      building: 'อาคาร',
+    },
+    role: 'บทบาท',
   },
   common: {
     save: 'บันทึก',
@@ -192,7 +203,7 @@ export const th: typeof en = {
     },
   },
   dashboard: {
-    title: 'แดชบอร์ด',
+    title: 'ภาพรวม',
     intro: 'ภาพรวมของเดือนนี้ และค่าเช่ากับค่าสาธารณูปโภคย้อนหลัง 12 เดือน',
     occupancy: 'อัตราการเข้าพัก',
     billed: 'ออกบิลเดือนนี้',
@@ -224,6 +235,7 @@ export const th: typeof en = {
     },
   },
   reports: {
+    intro: 'รายงานประจำเดือน อ่าน พิมพ์ หรือส่งออกเป็น CSV ได้',
     period: 'เดือน',
     prev: 'เดือนก่อน',
     next: 'เดือนถัดไป',
@@ -853,6 +865,9 @@ export const th: typeof en = {
       notFound: 'ไม่พบห้องนี้ในตึกนี้',
       back: 'กลับไปแผนผังห้อง',
     },
+  },
+  settings: {
+    intro: 'ตึก ประเภทห้อง และอัตราค่าบริการที่ใช้คิดบิล',
   },
   placeholder: {
     dashboard: 'ภาพรวม',

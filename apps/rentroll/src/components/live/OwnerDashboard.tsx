@@ -44,7 +44,9 @@ function DashboardBody({ locale }: { locale: Locale }) {
   const collected = percentOf(k.collectedSatang, k.billedSatang);
   const occupancy = k.occupancy ?? 0;
   const occupancyText =
-    k.occupancy === null ? m.contracts.blank : `${Math.round(occupancy * 100)}%`;
+    k.occupancy === null
+      ? m.contracts.blank
+      : `${Math.round(occupancy * 100)}%`;
   const occupancyLabel = `${p.occupancy} ${occupancyText}`;
   const occupiedOf = `${k.occupied} / ${k.rentable}`;
   const collectedPercent = Math.round(collected * 100);
@@ -203,7 +205,9 @@ function DashboardBody({ locale }: { locale: Locale }) {
                 : 'border-line bg-surface-raised',
             )}
           >
-            <dt className="text-ink-muted">{t.label}</dt>
+            <dt className={t.alert ? 'text-ink' : 'text-ink-muted'}>
+              {t.label}
+            </dt>
             <dd
               className={cn(
                 ts('headline-sm', locale),
@@ -232,10 +236,7 @@ function DashboardBody({ locale }: { locale: Locale }) {
           className="grid h-40 grid-cols-12 items-end gap-1 md:gap-2"
         >
           {data.revenue.map((r) => (
-            <div
-              key={r.period}
-              className="flex h-full flex-col justify-end"
-            >
+            <div key={r.period} className="flex h-full flex-col justify-end">
               <span
                 className="block w-full rounded-xs bg-product-accent"
                 style={{

@@ -1,16 +1,16 @@
 import {
   Building2,
-  CalendarClock,
+  ClipboardList,
   CreditCard,
   DoorOpen,
+  FileSignature,
   FileText,
   Gauge,
   Home,
-  Layers,
   Megaphone,
-  Percent,
   Receipt,
   Settings,
+  Users,
   Wallet,
   Wrench,
   type LucideIcon,
@@ -42,6 +42,8 @@ export type NavKey =
   | 'buildings'
   | 'rates'
   | 'roomTypes'
+  | 'settings'
+  | 'reports'
   | 'bills'
   | 'myRepairs';
 
@@ -56,44 +58,59 @@ export type NavItem = {
   match?: string;
   /** Active only on the exact path (the home pages, whose paths are prefixes of every other page). */
   exact?: boolean;
+  /** The sidebar group it sits under; items without one follow the groups, apart (Settings). */
+  group?: NavGroup;
 };
+
+export type NavGroup = 'month' | 'people' | 'building';
 
 export type RoleNav = { tabs: NavItem[]; sections: NavItem[] };
 
+// The owner's sections in three groups (ux-v2/rentroll.md › Shell), then Reports and Settings apart, each an index of
+// its pages (rent roll, utilities, deposits; buildings, room types, rates), so the sidebar fits 1280 × 800 unscrolled.
 const OWNER_SECTIONS: NavItem[] = [
-  { key: 'dashboard', path: '/owner/dashboard', icon: Home },
-  { key: 'rooms', path: '/owner/rooms', icon: Building2 },
-  { key: 'tenants', path: '/owner/tenants', icon: CalendarClock },
-  { key: 'contracts', path: '/owner/contracts', icon: FileText },
-  { key: 'moveIn', path: '/owner/move-in', icon: DoorOpen },
+  { key: 'dashboard', path: '/owner/dashboard', icon: Home, group: 'month' },
   {
     key: 'meters',
     path: '/owner/meters/current',
     match: '/owner/meters',
     icon: Gauge,
+    group: 'month',
   },
   {
     key: 'billing',
     path: '/owner/billing/current',
     match: '/owner/billing',
     icon: Receipt,
+    group: 'month',
   },
-  { key: 'invoices', path: '/owner/invoices', icon: Receipt },
+  { key: 'invoices', path: '/owner/invoices', icon: FileText, group: 'month' },
   {
     key: 'payments',
     path: '/owner/payments/review',
     match: '/owner/payments',
     icon: CreditCard,
+    group: 'month',
   },
-  { key: 'overdue', path: '/owner/overdue', icon: Wallet },
-  { key: 'repairs', path: '/owner/repairs', icon: Wrench },
-  { key: 'announcements', path: '/owner/announcements', icon: Megaphone },
-  { key: 'rentRoll', path: '/owner/reports/rent-roll', icon: FileText },
-  { key: 'utilities', path: '/owner/reports/utilities', icon: Gauge },
-  { key: 'deposits', path: '/owner/reports/deposits', icon: Wallet },
-  { key: 'buildings', path: '/owner/settings/buildings', icon: Settings },
-  { key: 'rates', path: '/owner/settings/rates', icon: Percent },
-  { key: 'roomTypes', path: '/owner/settings/room-types', icon: Layers },
+  { key: 'overdue', path: '/owner/overdue', icon: Wallet, group: 'month' },
+  { key: 'rooms', path: '/owner/rooms', icon: Building2, group: 'people' },
+  { key: 'tenants', path: '/owner/tenants', icon: Users, group: 'people' },
+  {
+    key: 'contracts',
+    path: '/owner/contracts',
+    icon: FileSignature,
+    group: 'people',
+  },
+  { key: 'moveIn', path: '/owner/move-in', icon: DoorOpen, group: 'people' },
+  { key: 'repairs', path: '/owner/repairs', icon: Wrench, group: 'building' },
+  {
+    key: 'announcements',
+    path: '/owner/announcements',
+    icon: Megaphone,
+    group: 'building',
+  },
+  { key: 'reports', path: '/owner/reports', icon: ClipboardList },
+  { key: 'settings', path: '/owner/settings', icon: Settings },
 ];
 
 const CARETAKER_SECTIONS: NavItem[] = [
@@ -144,6 +161,13 @@ export const ROLE_NAV: Record<Role, RoleNav> = {
     sections: TENANT_SECTIONS,
   },
 };
+
+/** Where each role lands (ux-v2/rentroll.md › Shell): the owner on the overview, the caretaker on the meter round. */
+export function homePath(role: Role): string {
+  if (role === 'tenant') return '/t';
+  if (role === 'caretaker') return '/owner/meters/current';
+  return '/owner/dashboard';
+}
 
 /** Whether `pathname` (with the locale prefix) is on this nav item. */
 export function isNavActive(

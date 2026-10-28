@@ -5,7 +5,10 @@ import {
   tenantMessages,
 } from '@/src/client-store/selectors/live';
 import { loadBillsFor } from '@/src/client-store/selectors/live';
-import { loadTenantHome } from '@/src/client-store/selectors/tenant';
+import {
+  loadTenantHome,
+  tenantContract,
+} from '@/src/client-store/selectors/tenant';
 import { loadReviewQueue } from '@/src/client-store/selectors/payments';
 import type { StoreState } from '@/src/client-store/store';
 
@@ -36,3 +39,23 @@ export const feedView = (s: StoreState) => ({
 
 /** The building's name for the shop side of the chat. */
 export const buildingView = (s: StoreState) => s.data.building[0] ?? null;
+
+/**
+ * The property the badge names: the buildings' shared name (the sample calls them "… อาคาร A" / "…, Building A", so
+ * that suffix is dropped), with the Thai and English forms. Null until the snapshot has loaded.
+ */
+export const placeView = (s: StoreState) => {
+  const first = s.data.building[0];
+  if (!first) return null;
+  const suffix = /(,\s*Building|\s+อาคาร)\s+\S+$/u;
+  const strip = (name: string) =>
+    s.data.building.length > 1 ? name.replace(suffix, '') : name;
+  return {
+    th: strip(first.nameTh),
+    en: first.nameEn ? strip(first.nameEn) : null,
+  };
+};
+
+/** The sample tenant (room A-305): who the tenant role is, for the account menu. */
+export const demoTenantView = (s: StoreState) =>
+  s.snapshotDate ? tenantContract(s.data, s.snapshotDate) : null;

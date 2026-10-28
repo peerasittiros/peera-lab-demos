@@ -1,7 +1,7 @@
 import { existsSync, readdirSync, statSync } from 'node:fs';
 import { join } from 'node:path';
 import { describe, expect, it } from 'vitest';
-import { isNavActive, ROLE_NAV, type NavItem } from './nav-config';
+import { homePath, isNavActive, ROLE_NAV, type NavItem } from './nav-config';
 
 const APP_DIR = join(process.cwd(), 'app', '[locale]');
 
@@ -61,5 +61,26 @@ describe('role navigation (SPEC §3)', () => {
     ) as NavItem;
     expect(isNavActive(meters, '/th/owner/meters/2026-09', 'th')).toBe(true);
     expect(isNavActive(meters, '/th/owner/rooms', 'th')).toBe(false);
+  });
+
+  it('groups the owner sidebar, each group in one run, with Reports and Settings last and apart', () => {
+    const { sections } = ROLE_NAV.owner;
+    const groups = sections.map((item) => item.group ?? null);
+    const runs = groups.filter(
+      (group, i) => i === 0 || group !== groups[i - 1],
+    );
+    expect(new Set(runs).size).toBe(runs.length);
+    expect(runs).toEqual(['month', 'people', 'building', null]);
+    expect(sections.at(-1)?.key).toBe('settings');
+  });
+
+  it('lands each role on its own start page, which is one of its sections', () => {
+    expect(homePath('owner')).toBe('/owner/dashboard');
+    expect(homePath('tenant')).toBe('/t');
+    for (const role of Object.keys(ROLE_NAV) as (keyof typeof ROLE_NAV)[]) {
+      expect(ROLE_NAV[role].sections.map((item) => item.path)).toContain(
+        homePath(role),
+      );
+    }
   });
 });

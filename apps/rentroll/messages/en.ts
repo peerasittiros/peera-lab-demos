@@ -5,7 +5,22 @@ export const en = defineMessages()({
   meta: {
     title: 'Rentroll: rooms, bills and repairs for your building',
   },
-  app: { name: 'Rentroll' },
+  app: {
+    name: 'Rentroll',
+    samplePlace: 'Sample property',
+    placeLogo: 'Logo of',
+  },
+  account: {
+    menu: 'Account',
+    switchUser: 'Switch user',
+    demo: 'Demo',
+    sampleAccount: 'Sample account',
+    thai: 'ภาษาไทย',
+    english: 'English',
+    room: 'Room {room}',
+    tenantRoom: 'Tenant · room {room}',
+  },
+  rolesShort: { owner: 'Owner', caretaker: 'Caretaker', tenant: 'Tenant' },
   roles: { owner: 'Owner', caretaker: 'Caretaker', tenant: 'Tenant' },
   nav: {
     label: 'Main navigation',
@@ -43,17 +58,12 @@ export const en = defineMessages()({
     theme: 'Theme',
     themeLight: 'Light',
     themeDark: 'Dark',
-    resetDemo: 'Reset sample data',
-    demoActions: 'Demo actions',
-    demoActionsSoon: 'Available after the next update',
-    simulateReminders: 'Simulate overdue reminders',
-    simulateSendAll: 'Simulate send all bills',
-    openTenant: 'Open tenant A-305',
-    showReceived: 'Show what the tenant received',
-    resetTitle: 'Reset the sample data?',
-    resetBody:
-      'Your changes on this device are deleted and the sample building starts again.',
-    resetConfirm: 'Reset',
+    groups: {
+      month: 'This month',
+      people: 'Rooms and tenants',
+      building: 'Building',
+    },
+    role: 'Role',
   },
   common: {
     save: 'Save',
@@ -189,7 +199,7 @@ export const en = defineMessages()({
     },
   },
   dashboard: {
-    title: 'Dashboard',
+    title: 'Overview',
     intro:
       'This month at a glance, and the last twelve months of rent and utilities.',
     occupancy: 'Occupancy',
@@ -222,6 +232,7 @@ export const en = defineMessages()({
     },
   },
   reports: {
+    intro: 'Month-end reports to read, print or export as CSV.',
     period: 'Month',
     prev: 'Previous month',
     next: 'Next month',
@@ -860,6 +871,9 @@ export const en = defineMessages()({
       notFound: 'No such room in this building.',
       back: 'Back to the room map',
     },
+  },
+  settings: {
+    intro: 'The buildings, the room types and the rates that bills are worked out from.',
   },
   placeholder: {
     dashboard: 'Overview',
