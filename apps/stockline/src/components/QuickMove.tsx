@@ -28,6 +28,7 @@ import {
   searchViews,
 } from '../client-store/views';
 import type { ItemView } from '../domain/read-models';
+import type { MovementType } from '../domain/stock';
 import { nameIn, translator } from '../i18n';
 import { formatQty, formatSigned, unitName } from '../lib/format';
 import { AppLink } from './AppLink';
@@ -98,6 +99,8 @@ export function QuickMove({ locale }: { locale: Locale }) {
   const [sheetKey, setSheetKey] = useState(0);
   const [scanOpen, setScanOpen] = useState(false);
   const [scanKey, setScanKey] = useState(0);
+  // The scanner result picks In, Out or Adjust; a tapped row starts on In.
+  const [moveType, setMoveType] = useState<MovementType>('in');
   const inputRef = useRef<HTMLInputElement>(null);
 
   // Debounced search, 150 ms (02 §6.3).
@@ -118,8 +121,9 @@ export function QuickMove({ locale }: { locale: Locale }) {
   );
   const selected = views.find((entry) => entry.id === selectedId) ?? null;
 
-  const open = (item: ItemView) => {
+  const open = (item: ItemView, type: MovementType = 'in') => {
     setSelectedId(item.id);
+    setMoveType(type);
     if (desktop) {
       setFormKey((key) => key + 1);
       return;
@@ -370,6 +374,7 @@ export function QuickMove({ locale }: { locale: Locale }) {
               item={panelItem}
               locale={locale}
               role={role}
+              initialType={panelItem.id === selectedId ? moveType : 'in'}
               onSettled={onSettled}
             />
           </div>
@@ -402,6 +407,7 @@ export function QuickMove({ locale }: { locale: Locale }) {
         open={sheetOpen}
         onOpenChange={setSheetOpen}
         onSettled={onSettled}
+        initialType={moveType}
       />
       <ScanOverlay
         key={`scan-${scanKey}`}
@@ -409,9 +415,9 @@ export function QuickMove({ locale }: { locale: Locale }) {
         role={role}
         open={scanOpen}
         onOpenChange={setScanOpen}
-        onFound={(found) => {
+        onFound={(found, type) => {
           setScanOpen(false);
-          open(found);
+          open(found, type);
         }}
       />
     </div>

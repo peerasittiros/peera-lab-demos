@@ -14,15 +14,21 @@ import {
   Switch,
   ts,
 } from '@peera/ui';
-import { CameraOff, Flashlight, Sparkles } from 'lucide-react';
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { CameraOff, Flashlight, ScanLine, Sparkles } from 'lucide-react';
+import { useCallback, useEffect, useRef, useState, type Ref } from 'react';
 import { useItemViews } from '../client-store/hooks';
 import { findByCode, sampleCode } from '../client-store/views';
 import type { ItemView } from '../domain/read-models';
-import type { Role } from '../domain/stock';
-import { translator } from '../i18n';
+import type { MovementType, Role } from '../domain/stock';
+import { nameIn, translator } from '../i18n';
+import { formatQty } from '../lib/format';
 import { AppLink } from './AppLink';
+import { ItemStatusBadge } from './ItemStatusBadge';
+import { buttonLink } from './styles';
 import { createReader, type BarcodeReader } from './barcode-reader';
+
+/** What the last read found. While one shows, the camera is off until the visitor scans again. */
+type ScanResult = { item: ItemView } | { code: string } | null;
 
 type CameraState =
   'starting' | 'running' | 'embedded-blocked' | 'denied' | 'unsupported';
@@ -84,8 +90,10 @@ function FrameCorners() {
 /**
  * Scan overlay (02 §3.1 item 3, §8 screen 2). Uses the browser's BarcodeDetector where it exists, else a
  * lazy-loaded fallback reader. Inside the website's iframe the camera needs `allow="camera"`; when the browser
- * still refuses, the visitor gets "open in a new tab" and can always type the code or simulate a scan. The parent
- * gives it a new `key` per opening, so state starts fresh; the camera stops when it closes.
+ * still refuses, the visitor gets "open in a new tab" and can always type the code or simulate a scan. Every read
+ * stops the camera and shows what it found, with the next steps (record In, Out or Adjust, open the item, or scan
+ * again); nothing moves on by itself. The parent gives it a new `key` per opening, so state starts fresh; the camera
+ * stops when it closes.
  */
 export function ScanOverlay({
   locale,
@@ -98,9 +106,9 @@ export function ScanOverlay({
   role: Role;
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  onFound: (item: ItemView) => void;
+  onFound: (item: ItemView, type: MovementType) => void;
 }) {
-  const { t, m } = translator(locale);
+  const { m } = translator(locale);
   const embedded = useEmbedded();
   const videoRef = useRef<HTMLVideoElement>(null);
   const streamRef = useRef<MediaStream | null>(null);
@@ -115,8 +123,18 @@ export function ScanOverlay({
   const [torchAvailable, setTorchAvailable] = useState(false);
   const [torch, setTorch] = useState(false);
   const [feedback, setFeedback] = useState(true);
+  const feedbackRef = useRef(feedback);
+  useEffect(() => {
+    feedbackRef.current = feedback;
+  }, [feedback]);
   const [code, setCode] = useState('');
-  const [unknown, setUnknown] = useState<string | null>(null);
+  const [result, setResult] = useState<ScanResult>(null);
+  // A new session restarts the camera after a result.
+  const [session, setSession] = useState(0);
+  const resultRef = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    if (result) resultRef.current?.focus();
+  }, [result]);
 
   const stop = useCallback(() => {
     readerRef.current?.stop();
@@ -129,21 +147,24 @@ export function ScanOverlay({
     (value: string) => {
       const trimmed = value.trim();
       if (!trimmed) return;
+      // Stop first: the reader can report the same code several times before it stops.
+      stop();
       const found = findByCode(viewsRef.current, trimmed);
-      if (!found) {
-        setUnknown(trimmed);
-        return;
-      }
-      if (feedback) {
+      if (found && feedbackRef.current) {
         beep();
         navigator.vibrate?.(60);
       }
-      stop();
-      setUnknown(null);
-      onFound(found);
+      setResult(found ? { item: found } : { code: trimmed });
     },
-    [feedback, onFound, stop],
+    [stop],
   );
+
+  const scanAgain = () => {
+    setResult(null);
+    setCode('');
+    setCamera('starting');
+    setSession((value) => value + 1);
+  };
 
   useEffect(() => {
     if (!open) return;
@@ -194,14 +215,14 @@ export function ScanOverlay({
       }
       readerRef.current = reader;
       setCamera('running');
-      reader.start(video, (value) => lookup(value));
+      reader.start(video, lookup);
     };
     void start();
     return () => {
       cancelled = true;
       stop();
     };
-  }, [open, embedded, lookup, stop]);
+  }, [open, session, embedded, lookup, stop]);
 
   const toggleTorch = async (next: boolean) => {
     const [track] = streamRef.current?.getVideoTracks() ?? [];
@@ -238,7 +259,23 @@ export function ScanOverlay({
         <SheetTitle locale={locale}>{m.scan.title}</SheetTitle>
         <SheetDescription locale={locale}>{m.scan.hint}</SheetDescription>
 
-        <div className="relative mt-4 aspect-[4/3] w-full overflow-hidden rounded-md border border-line bg-surface-sunken">
+        {result ? (
+          <ScanResultCard
+            ref={resultRef}
+            result={result}
+            locale={locale}
+            role={role}
+            onRecord={onFound}
+            onScanAgain={scanAgain}
+          />
+        ) : null}
+
+        <div
+          className={cn(
+            'relative mt-4 aspect-[4/3] w-full overflow-hidden rounded-md border border-line bg-surface-sunken',
+            result && 'hidden',
+          )}
+        >
           <video
             ref={videoRef}
             muted
@@ -289,7 +326,12 @@ export function ScanOverlay({
           ) : null}
         </div>
 
-        <div className="mt-3 flex flex-wrap items-center gap-x-5 gap-y-2">
+        <div
+          className={cn(
+            'mt-3 flex flex-wrap items-center gap-x-5 gap-y-2',
+            result && 'hidden',
+          )}
+        >
           {torchAvailable ? (
             <Button
               locale={locale}
@@ -326,10 +368,7 @@ export function ScanOverlay({
               value={code}
               inputMode="text"
               autoComplete="off"
-              onChange={(event) => {
-                setCode(event.target.value);
-                setUnknown(null);
-              }}
+              onChange={(event) => setCode(event.target.value)}
               className="code"
             />
           </Field>
@@ -354,28 +393,6 @@ export function ScanOverlay({
           </div>
         </form>
 
-        {unknown ? (
-          <div
-            role="status"
-            className="mt-4 rounded-sm border border-line bg-surface-sunken p-3"
-          >
-            <p className={cn(ts('body-sm', locale), 'm-0 text-ink')}>
-              {t('scan.unknownCode', { code: unknown })}
-            </p>
-            {role === 'owner' ? (
-              <AppLink
-                href={`/${locale}/items/new?barcode=${encodeURIComponent(unknown)}`}
-                className={cn(
-                  ts('ui', locale),
-                  'mt-2 inline-flex min-h-11 items-center text-ink underline',
-                )}
-              >
-                {m.scan.createWithCode}
-              </AppLink>
-            ) : null}
-          </div>
-        ) : null}
-
         <p className={cn(ts('body-sm', locale), 'mt-5 mb-0')}>
           <AppLink
             href={`/${locale}/items/labels`}
@@ -386,5 +403,135 @@ export function ScanOverlay({
         </p>
       </SheetContent>
     </Sheet>
+  );
+}
+
+/**
+ * The result of one read, shown in place of the camera: the item with its stock and the next steps, or the unknown
+ * code with "create an item" for the owner. It takes focus, so keyboard and screen-reader users land on it.
+ */
+function ScanResultCard({
+  ref,
+  result,
+  locale,
+  role,
+  onRecord,
+  onScanAgain,
+}: {
+  ref: Ref<HTMLDivElement>;
+  result: NonNullable<ScanResult>;
+  locale: Locale;
+  role: Role;
+  onRecord: (item: ItemView, type: MovementType) => void;
+  onScanAgain: () => void;
+}) {
+  const { t, m } = translator(locale);
+  const again = (
+    <Button locale={locale} variant="ghost" onClick={onScanAgain}>
+      <ScanLine aria-hidden size={16} strokeWidth={1.75} />
+      {m.scan.again}
+    </Button>
+  );
+
+  if ('code' in result)
+    return (
+      <div
+        ref={ref}
+        tabIndex={-1}
+        role="status"
+        className="mt-4 flex flex-col gap-3 rounded-md border border-line bg-surface-sunken p-4 outline-none"
+      >
+        <p className={cn(ts('label', locale), 'm-0 text-ink-muted')}>
+          {m.scan.notFoundTitle}
+        </p>
+        <p className={cn(ts('body', locale), 'm-0 text-ink')}>
+          {t('scan.unknownCode', { code: result.code })}
+        </p>
+        <div className="flex flex-wrap items-center gap-2">
+          {role === 'owner' ? (
+            <AppLink
+              href={`/${locale}/items/new?barcode=${encodeURIComponent(result.code)}`}
+              className={buttonLink(locale, 'secondary')}
+            >
+              {m.scan.createWithCode}
+            </AppLink>
+          ) : null}
+          {again}
+        </div>
+      </div>
+    );
+
+  const { item } = result;
+  return (
+    <div
+      ref={ref}
+      tabIndex={-1}
+      role="status"
+      className="mt-4 flex flex-col gap-4 rounded-md border border-line bg-surface-raised p-4 outline-none"
+    >
+      <div className="flex items-start gap-3">
+        {item.imageUrl ? (
+          // eslint-disable-next-line @next/next/no-img-element -- a small data URL or a static photo
+          <img
+            src={item.imageUrl}
+            alt=""
+            width={56}
+            height={56}
+            className="h-14 w-14 shrink-0 rounded-sm border border-line object-cover"
+          />
+        ) : null}
+        <div className="flex min-w-0 flex-col gap-1">
+          <p className={cn(ts('label', locale), 'm-0 text-ink-muted')}>
+            {m.scan.resultTitle}
+          </p>
+          <p className={cn(ts('title', locale), 'm-0 text-ink')}>
+            {nameIn(item, locale)}
+          </p>
+          <p className={cn(ts('body-sm', locale), 'm-0 text-ink-muted')}>
+            <span className="code">{item.sku}</span>
+            {` · ${t('quickMove.sheetDescription', {
+              qty: formatQty(item.onHand, item.baseUnit, locale),
+              min: formatQty(item.minQty, item.baseUnit, locale),
+            })}`}
+          </p>
+          <div>
+            <ItemStatusBadge status={item.status} locale={locale} />
+          </div>
+        </div>
+      </div>
+      <div
+        role="group"
+        aria-labelledby="scan-next"
+        className="flex flex-col gap-2"
+      >
+        <p id="scan-next" className={cn(ts('ui', locale), 'm-0 text-ink')}>
+          {m.scan.next}
+        </p>
+        <div className="grid grid-cols-3 gap-2">
+          {(['in', 'out', 'adjust'] as const).map((type) => (
+            <Button
+              key={type}
+              locale={locale}
+              variant={type === 'in' ? 'primary' : 'secondary'}
+              onClick={() => onRecord(item, type)}
+            >
+              {m.types[type]}
+            </Button>
+          ))}
+        </div>
+      </div>
+      <div className="flex flex-wrap items-center gap-2">
+        {again}
+        <AppLink
+          href={`/${locale}/items/${item.id}`}
+          className={cn(
+            ts('ui', locale),
+            'inline-flex min-h-11 items-center px-2 text-ink underline',
+          )}
+        >
+          {m.items.openItem}
+        </AppLink>
+      </div>
+    </div>
   );
 }

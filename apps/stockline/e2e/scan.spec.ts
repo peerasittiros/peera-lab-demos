@@ -1,7 +1,7 @@
 import { openEmbedded } from '@peera/test-utils';
 import { expect, test } from './fixtures';
 
-test('"Scan a sample" opens the scanned item, ready to record', async ({
+test('a scan stops on the result, and the chosen next step opens the move form', async ({
   page,
 }) => {
   await page.goto('/en');
@@ -9,9 +9,34 @@ test('"Scan a sample" opens the scanned item, ready to record', async ({
   const scanner = page.getByRole('dialog', { name: 'Scan a barcode' });
   await expect(scanner).toBeVisible();
   await scanner.getByRole('button', { name: 'Scan a sample' }).click();
-  await expect(page.getByRole('button', { name: 'Save In' })).toBeVisible({
+  // The scanner stays open on what it found and waits for a choice.
+  const result = scanner.getByRole('status').filter({ hasText: 'Found' });
+  await expect(result).toBeVisible();
+  await expect(result).toBeFocused();
+  await expect(
+    result.getByRole('link', { name: 'Open the item page' }),
+  ).toBeVisible();
+  await result
+    .getByRole('group', { name: 'What next?' })
+    .getByRole('button', { name: 'Out', exact: true })
+    .click();
+  await expect(page.getByRole('button', { name: 'Save Out' })).toBeVisible({
     timeout: 15_000,
   });
+});
+
+test('"Scan again" leaves the result and returns to the camera', async ({
+  page,
+}) => {
+  await page.goto('/en');
+  await page.getByRole('button', { name: 'Scan', exact: true }).click();
+  const scanner = page.getByRole('dialog', { name: 'Scan a barcode' });
+  await scanner.getByRole('button', { name: 'Scan a sample' }).click();
+  await expect(scanner.getByText('What next?')).toBeVisible();
+  await scanner.getByRole('button', { name: 'Scan again' }).click();
+  await expect(scanner.getByText('What next?')).toHaveCount(0);
+  await expect(scanner.getByLabel('Type the code')).toHaveValue('');
+  await expect(scanner).toBeVisible();
 });
 
 test('a typed unknown code offers to create an item with it', async ({
@@ -44,6 +69,10 @@ test('without camera access the scanner explains and still takes a typed code', 
   ).toBeVisible({ timeout: 15_000 });
   await scanner.getByLabel('พิมพ์รหัสเอง').fill('STK-0001');
   await scanner.getByRole('button', { name: 'ค้นหา' }).click();
+  await scanner
+    .getByRole('group', { name: 'จะทำอะไรต่อ' })
+    .getByRole('button', { name: 'รับเข้า', exact: true })
+    .click();
   await expect(page.getByRole('button', { name: 'บันทึกรับเข้า' })).toBeVisible(
     { timeout: 15_000 },
   );

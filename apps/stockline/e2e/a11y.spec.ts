@@ -66,6 +66,10 @@ test('the move sheet and scan overlay pass axe', async ({ page }) => {
     page.getByRole('dialog', { name: 'สแกนบาร์โค้ด' }),
   ).toBeVisible();
   await expectNoA11yViolations(page, { exclude: ['video'] });
+  // The result card that stops after a read.
+  await page.getByRole('button', { name: 'สแกนตัวอย่าง' }).click();
+  await expect(page.getByText('จะทำอะไรต่อ')).toBeVisible();
+  await expectNoA11yViolations(page, { exclude: ['video'] });
 });
 
 test('framed by the website without cookies, the session travels in ?sid and writes work', async ({

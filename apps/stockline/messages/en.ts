@@ -241,6 +241,10 @@ export const en = defineMessages()({
     createWithCode: 'Create an item with this barcode',
     labelsLink: 'Print sample barcodes',
     found: 'Found {item}',
+    resultTitle: 'Found',
+    notFoundTitle: 'Not found',
+    next: 'What next?',
+    again: 'Scan again',
   },
   items: {
     title: 'Items',

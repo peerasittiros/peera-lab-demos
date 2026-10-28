@@ -241,6 +241,10 @@ export const th: typeof en = {
     createWithCode: 'สร้างสินค้าใหม่ด้วยบาร์โค้ดนี้',
     labelsLink: 'พิมพ์บาร์โค้ดตัวอย่าง',
     found: 'พบ {item}',
+    resultTitle: 'พบสินค้า',
+    notFoundTitle: 'ไม่พบสินค้า',
+    next: 'จะทำอะไรต่อ',
+    again: 'สแกนต่อ',
   },
   items: {
     title: 'สินค้า',
