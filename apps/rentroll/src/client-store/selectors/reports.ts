@@ -183,10 +183,7 @@ export function dashboard(data: Data, period: string, today: string) {
   const collected = billedNow.reduce((sum, i) => sum + i.paidSatang, 0);
 
   const open = data.invoice.filter((i) => OPEN_STATUSES.includes(i.status));
-  const outstanding = open.reduce(
-    (sum, i) => sum + balanceOf(data, i),
-    0,
-  );
+  const outstanding = open.reduce((sum, i) => sum + balanceOf(data, i), 0);
   const overdue = open.filter((i) => i.dueDate < today);
 
   const notices = data.contract.filter((c) => c.status === 'notice_given');
@@ -281,13 +278,12 @@ export function dashboard(data: Data, period: string, today: string) {
       rentable: rentable.length,
       occupancy: rentable.length === 0 ? null : occupied / rentable.length,
       billedSatang: billed,
+      /** This month's monthly bills, against the rooms with a tenant, so the overview can say billing is unfinished. */
+      billedCount: billedNow.length,
       collectedSatang: collected,
       outstandingSatang: outstanding,
       overdueCount: overdue.length,
-      overdueSatang: overdue.reduce(
-        (s, i) => s + balanceOf(data, i),
-        0,
-      ),
+      overdueSatang: overdue.reduce((s, i) => s + balanceOf(data, i), 0),
       moveOuts30: notices.length,
       openRepairs: repairs.length,
     },

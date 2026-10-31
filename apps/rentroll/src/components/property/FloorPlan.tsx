@@ -1,7 +1,7 @@
 'use client';
 
 import type { Locale } from '@peera/i18n';
-import { cn, focusRing, ts } from '@peera/ui';
+import { cn, focusRing, SegmentedControl, ts } from '@peera/ui';
 import {
   AlertCircle,
   CalendarClock,
@@ -11,6 +11,7 @@ import {
   type LucideIcon,
 } from 'lucide-react';
 import Link from 'next/link';
+import { useState, type MouseEvent } from 'react';
 import type { RoomStatus } from '@/src/domain/property';
 import { translator } from '@/src/i18n';
 
@@ -27,7 +28,8 @@ export type FloorPlanRoom = {
 type Mark = { icon: LucideIcon; tone: string; word: string };
 
 /** Rentroll's 12/13px metadata style (theme.css); not one of the shared type styles, so picked here. */
-const caption = (locale: Locale) => (locale === 'th' ? 'caption-th' : 'caption');
+const caption = (locale: Locale) =>
+  locale === 'th' ? 'caption-th' : 'caption';
 
 /**
  * What a tile says about its room, most urgent first: overdue, notice given, closed for repair, reserved, vacant.
@@ -42,13 +44,29 @@ export function markOf(room: FloorPlanRoom, locale: Locale): Mark | null {
       word: tp('property.rooms.overdueFor', room.daysPastDue),
     };
   if (room.notice)
-    return { icon: LogOut, tone: 'text-warning', word: m.ownerLive.filterNotice };
+    return {
+      icon: LogOut,
+      tone: 'text-warning',
+      word: m.ownerLive.filterNotice,
+    };
   if (room.status === 'maintenance')
-    return { icon: Wrench, tone: 'text-ink-muted', word: m.property.status.maintenance };
+    return {
+      icon: Wrench,
+      tone: 'text-ink-muted',
+      word: m.property.status.maintenance,
+    };
   if (room.status === 'reserved')
-    return { icon: CalendarClock, tone: 'text-info', word: m.property.status.reserved };
+    return {
+      icon: CalendarClock,
+      tone: 'text-info',
+      word: m.property.status.reserved,
+    };
   if (room.status === 'vacant')
-    return { icon: DoorOpen, tone: 'text-ink-muted', word: m.property.status.vacant };
+    return {
+      icon: DoorOpen,
+      tone: 'text-ink-muted',
+      word: m.property.status.vacant,
+    };
   return null;
 }
 
@@ -61,10 +79,13 @@ export function RoomTile({
   locale,
   room,
   href,
+  onOpen,
 }: {
   locale: Locale;
   room: FloorPlanRoom;
   href: string;
+  /** From 1024 px a plain click opens the room here instead (a side panel); phones and new-tab clicks follow the link. */
+  onOpen?: (room: FloorPlanRoom) => void;
 }) {
   const { m } = translator(locale);
   const mark = markOf(room, locale);
@@ -75,6 +96,20 @@ export function RoomTile({
       prefetch={false}
       href={href}
       data-status={room.status}
+      onClick={(event: MouseEvent<HTMLAnchorElement>) => {
+        if (
+          !onOpen ||
+          event.button !== 0 ||
+          event.metaKey ||
+          event.ctrlKey ||
+          event.shiftKey ||
+          event.altKey ||
+          !window.matchMedia('(min-width: 1024px)').matches
+        )
+          return;
+        event.preventDefault();
+        onOpen(room);
+      }}
       className={cn(
         'relative flex h-full min-h-[5.5rem] flex-col gap-1 rounded-[6px] border p-3 hover:border-ink',
         vacant
@@ -111,28 +146,58 @@ export function RoomTile({
   );
 }
 
-/** The rooms of a building as floors of tiles, lowest floor first, each floor headed with its number and size. */
+/**
+ * The rooms of a building as floors of tiles, lowest floor first, each floor headed with its number and size.
+ * With `pickFloor`, phones show one floor at a time behind a floor switch; from 768 every floor shows.
+ */
 export function FloorPlan({
   locale,
   rooms,
   hrefOf,
+  onOpen,
+  pickFloor = false,
+  floorHeading: FloorHeading = 'h2',
 }: {
   locale: Locale;
   rooms: FloorPlanRoom[];
   hrefOf: (room: FloorPlanRoom) => string;
+  onOpen?: (room: FloorPlanRoom) => void;
+  pickFloor?: boolean;
+  /** h2 on the room map; h3 where the plan sits under its own h2 (the overview). */
+  floorHeading?: 'h2' | 'h3';
 }) {
-  const { t, tp } = translator(locale);
+  const { m, t, tp } = translator(locale);
   const floors = [...new Set(rooms.map((room) => room.floor))].sort(
     (a, b) => a - b,
   );
+  const [picked, setPicked] = useState<number | null>(null);
+  const current = floors.includes(picked ?? NaN) ? picked : floors[0];
   return (
     <div className="grid gap-6">
+      {pickFloor && floors.length > 1 ? (
+        <SegmentedControl
+          locale={locale}
+          fullWidth
+          aria-label={m.dashboard.floorPick}
+          value={String(current)}
+          onValueChange={(value) => setPicked(Number(value))}
+          options={floors.map((floor) => ({
+            value: String(floor),
+            label: t('property.rooms.floorTitle', { floor }),
+          }))}
+          className="md:hidden"
+        />
+      ) : null}
       {floors.map((floor) => {
         const onFloor = rooms.filter((room) => room.floor === floor);
         const headingId = `floor-${floor}`;
         return (
-          <section key={floor} aria-labelledby={headingId}>
-            <h2
+          <section
+            key={floor}
+            aria-labelledby={headingId}
+            className={cn(pickFloor && floor !== current && 'max-md:hidden')}
+          >
+            <FloorHeading
               id={headingId}
               className={cn(
                 ts('label', locale),
@@ -143,11 +208,16 @@ export function FloorPlan({
               <span className={cn(caption(locale), 'text-ink-muted')}>
                 {tp('property.rooms.roomsOnFloor', onFloor.length)}
               </span>
-            </h2>
+            </FloorHeading>
             <ul className="grid grid-cols-[repeat(auto-fill,minmax(6.5rem,1fr))] gap-2">
               {onFloor.map((room) => (
                 <li key={room.roomId}>
-                  <RoomTile locale={locale} room={room} href={hrefOf(room)} />
+                  <RoomTile
+                    locale={locale}
+                    room={room}
+                    href={hrefOf(room)}
+                    onOpen={onOpen}
+                  />
                 </li>
               ))}
             </ul>
