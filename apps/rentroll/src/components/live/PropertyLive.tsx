@@ -18,6 +18,7 @@ import {
 import type { StoreState } from '@/src/client-store/store';
 import { translator, type Messages } from '@/src/i18n';
 import { PageHeader } from '@/src/components/PageHeader';
+import { FloorPlan } from '@/src/components/property/FloorPlan';
 import { ReadyGate } from './ReadyGate';
 import { Dot, KV } from './KV';
 import { BuildingEditForm, RatePlanForm } from './OwnerEdits';
@@ -120,40 +121,11 @@ function RoomMapBody({ locale }: { locale: Locale }) {
         ))}
       </nav>
       {shown.length === 0 ? <p className="text-ink-muted">{p.empty}</p> : null}
-      <ul className="grid grid-cols-2 gap-3 md:grid-cols-4 xl:grid-cols-6">
-        {shown.map((r) => (
-          <li key={r.roomId}>
-            <Link
-              href={`/${locale}/owner/rooms/${r.roomId}`}
-              aria-label={`${p.open}: ${r.number}`}
-              className={cn(
-                'flex min-h-11 flex-col gap-2 rounded-sm border border-line bg-surface-raised p-3 hover:bg-surface-sunken',
-                focusRing,
-              )}
-            >
-              <span className="tabular-nums text-ink">{r.number}</span>
-              <span className="text-ink-muted">
-                {m.property.status[r.status]}
-              </span>
-              {r.renterName ? (
-                <span className="truncate text-ink">
-                  {r.renterName.split(' ')[0]}
-                </span>
-              ) : null}
-              {r.rent !== null ? (
-                <span className="tabular-nums text-ink">
-                  {formatMoney(r.rent, locale)}
-                </span>
-              ) : null}
-              {r.daysPastDue > 0 ? (
-                <span className="tabular-nums text-danger">
-                  <KV label={p.overdueDays}>{r.daysPastDue}</KV>
-                </span>
-              ) : null}
-            </Link>
-          </li>
-        ))}
-      </ul>
+      <FloorPlan
+        locale={locale}
+        rooms={shown}
+        hrefOf={(room) => `/${locale}/owner/rooms/${room.roomId}`}
+      />
     </>
   );
 }

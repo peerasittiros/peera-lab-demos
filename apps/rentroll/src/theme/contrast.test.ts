@@ -88,6 +88,15 @@ const pairs: Array<[string, string, number, string]> = [
   ['line-strong', 'surface-raised', 3, 'input border on cards (control)'],
   ['product-accent', 'surface', 3, 'primary control'],
   ['focus-ring', 'surface', 3, 'focus ring'],
+  // v2: the tinted page behind cards, and the vacant room tile.
+  ['ink', 'surface-tint', 4.5, 'headings and text on the tinted page'],
+  ['ink-muted', 'surface-tint', 4.5, 'page intro on the tinted page'],
+  ['product-accent', 'surface-tint', 4.5, 'links on the tinted page'],
+  ['focus-ring', 'surface-tint', 3, 'focus ring on the tinted page'],
+  ['ink', 'room-vacant', 4.5, 'room number on a vacant tile'],
+  ['ink-muted', 'room-vacant', 4.5, 'the word "vacant" on its tile'],
+  ['line-strong', 'room-vacant', 3, 'dashed border of a vacant tile'],
+  ['line-strong', 'surface-tint', 3, 'vacant tile border against the page'],
 ];
 
 describe.each(Object.keys(themes) as Array<keyof typeof themes>)(

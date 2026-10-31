@@ -108,7 +108,8 @@ export function AppShell({
   }
 
   return (
-    <div className="flex min-h-dvh flex-col">
+    // From 768 the page is the tint and cards sit on it as white sheets (ux-v2/rentroll.md › Colour).
+    <div className="flex min-h-dvh flex-col bg-surface md:bg-surface-tint">
       <a
         href="#main"
         className={cn(

@@ -9,6 +9,9 @@
   --surface: #ffffff;
   --surface-raised: #ffffff;
   --surface-sunken: #f9fafb;
+  /* v2 (ux-v2/rentroll.md): the page behind cards from 768, and the vacant room tile (with a dashed line-strong border). */
+  --surface-tint: #f8f7fc;
+  --room-vacant: #f9fafb;
   --ink: #111827;
   --ink-muted: #6b7280;
   --ink-faint: #9ca3af;
@@ -63,6 +66,8 @@
   --surface: #0f0d15;
   --surface-raised: #17141f;
   --surface-sunken: #1f1b2a;
+  --surface-tint: #15121f;
+  --room-vacant: #1a1726;
   --ink: #f3f4f6;
   --ink-muted: #a1a1aa;
   --ink-faint: #787387;
@@ -284,6 +289,23 @@
   font-weight: 400;
   font-variant-numeric: tabular-nums;
 }
+/* v2: the amount on a bill card, and the room number on a room tile. Digits only, so no Thai twin. */
+.money-lg {
+  font-family: var(--font-mono);
+  font-size: 32px;
+  line-height: 36px;
+  font-weight: 500;
+  font-variant-numeric: tabular-nums;
+  letter-spacing: 0;
+}
+.room-number {
+  font-family: var(--font-mono);
+  font-size: 15px;
+  line-height: 20px;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+  letter-spacing: 0;
+}
 
 @media (max-width: 639.98px) {
   .display-xl {
@@ -316,4 +338,6 @@
   --color-on-primary: var(--product-on-accent);
   --color-success-fill: var(--success-fill);
   --color-danger-ink: var(--danger-ink);
+  --color-surface-tint: var(--surface-tint);
+  --color-room-vacant: var(--room-vacant);
 }
