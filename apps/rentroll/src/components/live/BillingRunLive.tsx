@@ -2,7 +2,7 @@
 
 import type { Locale } from '@peera/i18n';
 import { formatMoney } from '@peera/i18n';
-import { Button, cn, focusRing, toast } from '@peera/ui';
+import { Button, cn, focusRing, toast, ts } from '@peera/ui';
 import { useCallback, useState } from 'react';
 import { getStore } from '@/src/client-store/instance';
 import { useStore } from '@/src/client-store/hooks';
@@ -16,7 +16,7 @@ import {
 import { billingPlan } from '@/src/client-store/selectors/billing';
 import type { StoreState } from '@/src/client-store/store';
 import { missingReadings } from '@/src/domain/billing-run';
-import { translator, type Messages } from '@/src/i18n';
+import { formatDay, formatPeriod, translator, type Messages } from '@/src/i18n';
 import { PageHeader } from '@/src/components/PageHeader';
 import { ReadyGate } from './ReadyGate';
 import type { CommandContext } from '@/src/client-store/commands/payments';
@@ -113,6 +113,8 @@ function BillingRunBody({
       done: (plan?.existing.length ?? 0) > 0 && drafts.length === 0,
     },
   ];
+  const allGenerated =
+    rooms.length > 0 && rooms.every((r) => r.existingInvoiceId);
   const chip = (active: boolean) =>
     cn(
       'inline-flex min-h-11 items-center rounded-sm border px-4 text-ink',
@@ -125,7 +127,7 @@ function BillingRunBody({
   return (
     <>
       <PageHeader locale={locale} title={p.title} description={p.intro} />
-      <p className="mb-4 tabular-nums text-ink-muted">{period}</p>
+      <p className="mb-4 text-ink-muted">{formatPeriod(period, locale)}</p>
       <nav aria-label={p.steps.meters} className="mb-6 flex flex-wrap gap-2">
         {buildings.map((b) => (
           <button
@@ -213,11 +215,9 @@ function BillingRunBody({
         <div>
           <Button
             type="button"
-            variant="primary"
+            variant={allGenerated ? 'secondary' : 'primary'}
             locale={locale}
-            disabled={
-              rooms.every((r) => r.existingInvoiceId) || plan?.plan == null
-            }
+            disabled={allGenerated || plan?.plan == null}
             onClick={() => {
               const result = actGenerateBilling(context(), {
                 buildingId: building.id,
@@ -246,17 +246,20 @@ function BillingRunBody({
         {(plan?.existing.length ?? 0) === 0 ? (
           <p className="text-ink-muted">{p.noRoomsThisMonth}</p>
         ) : null}
-        {(plan?.existing ?? []).map((inv) => (
-          <DraftCard
-            key={`${inv.id}-${inv.status}-${inv.totalSatang}`}
-            locale={locale}
-            m={m}
-            invoice={inv}
-            context={context}
-            onReport={report}
-            errorText={errorText}
-          />
-        ))}
+        <div className="grid gap-4 lg:grid-cols-2">
+          {(plan?.existing ?? []).map((inv) => (
+            <DraftCard
+              key={`${inv.id}-${inv.status}-${inv.totalSatang}`}
+              locale={locale}
+              m={m}
+              buildingName={buildingName(building)}
+              invoice={inv}
+              context={context}
+              onReport={report}
+              errorText={errorText}
+            />
+          ))}
+        </div>
       </section>
 
       <section className="flex flex-col gap-3">
@@ -264,7 +267,7 @@ function BillingRunBody({
         <div>
           <Button
             type="button"
-            variant="primary"
+            variant={allGenerated ? 'primary' : 'secondary'}
             locale={locale}
             disabled={drafts.length === 0}
             onClick={() => {
@@ -292,10 +295,15 @@ type PlanInvoice = NonNullable<
   ReturnType<typeof billingPlan>
 >['existing'][number];
 
-/** One invoice in the review: its lines can be edited, added or removed while it is a draft. */
+/**
+ * One bill as the tenant will see it (ux-v2/rentroll.md › Bills): building and room, the lines, the total in the
+ * numeric face, the due date in the reader's calendar, and the sample QR (never a payable code, 01 §6.3). While it is
+ * a draft its lines can be edited, added or removed.
+ */
 function DraftCard({
   locale,
   m,
+  buildingName,
   invoice,
   context,
   onReport,
@@ -303,11 +311,13 @@ function DraftCard({
 }: {
   locale: Locale;
   m: Messages;
+  buildingName: string;
   invoice: PlanInvoice;
   context: () => CommandContext;
   onReport: (text: string) => void;
   errorText: (key: string) => string;
 }) {
+  const { t } = translator(locale);
   const p = m.billing;
   const draft = invoice.status === 'draft';
   const [lines, setLines] = useState<Line[]>(
@@ -318,7 +328,9 @@ function DraftCard({
   );
   const [label, setLabel] = useState('');
   const [amount, setAmount] = useState('');
+  const [editing, setEditing] = useState(false);
   const total = lines.reduce((sum, l) => sum + l.amountSatang, 0);
+  const shownTotal = draft ? total : invoice.totalSatang;
 
   const save = () => {
     const result = actAdjustDraftLines(context(), {
@@ -335,26 +347,44 @@ function DraftCard({
     onReport(result.ok ? m.ownerLive.linesSaved : errorText(result.error));
   };
 
+  const titleId = `bill-${invoice.id}`;
   return (
-    <details
-      className="rounded-sm border border-line bg-surface-raised p-4"
-      open={draft}
+    <article
+      aria-labelledby={titleId}
+      className="flex flex-col gap-4 rounded-sm border border-line bg-surface-raised p-5"
     >
-      <summary className="flex min-h-11 flex-wrap items-center justify-between gap-3 text-ink">
-        <span className="tabular-nums">{invoice.roomNumber}</span>
-        <span className="tabular-nums">{invoice.number}</span>
-        <span className="text-ink-muted">
-          {p.status[invoice.status as keyof typeof p.status] ?? invoice.status}
-        </span>
-        <span className="tabular-nums">
-          {formatMoney(draft ? total : invoice.totalSatang, locale)}
-        </span>
-      </summary>
-      <ul className="mt-4 flex flex-col gap-2">
+      <header className="flex flex-wrap items-start justify-between gap-3">
+        <div className="flex min-w-0 flex-col">
+          <span className={cn(ts('body-sm', locale), 'text-ink-muted')}>
+            {buildingName}
+          </span>
+          <h3 id={titleId} className="room-number m-0 text-ink">
+            <span className="sr-only">
+              {t('billing.billFor', { room: '' })}
+            </span>
+            {invoice.roomNumber}
+          </h3>
+        </div>
+        <div className="flex flex-col items-end">
+          <span className="font-mono tabular-nums text-ink">
+            {invoice.number}
+          </span>
+          <span className={cn(ts('body-sm', locale), 'text-ink-muted')}>
+            {p.status[invoice.status as keyof typeof p.status] ??
+              invoice.status}
+          </span>
+        </div>
+      </header>
+      <ul className="m-0 flex list-none flex-col gap-2 p-0">
         {lines.map((line, index) => (
           <li
             key={line.id}
-            className="grid grid-cols-[1fr_auto_auto] items-center gap-3"
+            className={cn(
+              'grid items-center gap-3',
+              draft && editing
+                ? 'grid-cols-[1fr_auto_auto]'
+                : 'grid-cols-[1fr_auto]',
+            )}
           >
             <span className="text-ink">
               {locale === 'th' ? line.labelTh : line.labelEn}
@@ -362,7 +392,7 @@ function DraftCard({
                 <span className="text-ink-muted"> {p.estimated}</span>
               ) : null}
             </span>
-            {draft ? (
+            {draft && editing ? (
               <input
                 aria-label={locale === 'th' ? line.labelTh : line.labelEn}
                 inputMode="decimal"
@@ -381,11 +411,11 @@ function DraftCard({
                 className="min-h-11 w-32 rounded-sm border border-line-strong bg-surface-raised px-3 text-right text-ink tabular-nums"
               />
             ) : (
-              <span className="tabular-nums">
+              <span className="money text-ink">
                 {formatMoney(line.amountSatang, locale)}
               </span>
             )}
-            {draft ? (
+            {draft && editing ? (
               <button
                 type="button"
                 onClick={() =>
@@ -398,14 +428,41 @@ function DraftCard({
               >
                 {m.ownerLive.removeLine}
               </button>
-            ) : (
-              <span />
-            )}
+            ) : null}
           </li>
         ))}
       </ul>
+      <div className="flex items-baseline justify-between gap-3 border-t border-line pt-3">
+        <span className={cn(ts('label', locale), 'text-ink')}>
+          {p.billTotal}
+        </span>
+        <span className="money-lg text-ink">
+          {formatMoney(shownTotal, locale)}
+        </span>
+      </div>
+      <p className="m-0 text-ink-muted">
+        {t('billing.dueOn', { date: formatDay(invoice.dueDate, locale) })}
+      </p>
+      <div className="flex flex-col gap-1 rounded-sm border border-dashed border-line-strong p-3">
+        <span className={cn(ts('label', locale), 'text-ink')}>
+          {m.payments.pay.sample}
+        </span>
+        <code className="break-all font-mono text-ink-muted">{`RENTROLL-DEMO-${invoice.number}-${(shownTotal / 100).toFixed(2)}`}</code>
+      </div>
       {draft ? (
-        <div className="mt-4 flex flex-col gap-3">
+        <Button
+          type="button"
+          variant="ghost"
+          locale={locale}
+          aria-expanded={editing}
+          onClick={() => setEditing((value) => !value)}
+          className="self-start"
+        >
+          {editing ? p.stopEditing : p.editLines}
+        </Button>
+      ) : null}
+      {draft && editing ? (
+        <div className="flex flex-col gap-3">
           <div className="flex flex-wrap items-end gap-3">
             <label className="flex flex-col gap-1 text-ink-muted">
               <span>{m.ownerLive.lineLabelEn}</span>
@@ -476,6 +533,6 @@ function DraftCard({
           </div>
         </div>
       ) : null}
-    </details>
+    </article>
   );
 }

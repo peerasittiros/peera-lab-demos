@@ -16,7 +16,7 @@ import {
   roomTypeComparison,
 } from '@/src/client-store/selectors/property';
 import type { StoreState } from '@/src/client-store/store';
-import { translator, type Messages } from '@/src/i18n';
+import { translator, type Messages, formatDay, formatPeriod } from '@/src/i18n';
 import { PageHeader } from '@/src/components/PageHeader';
 import { FloorPlan } from '@/src/components/property/FloorPlan';
 import { ReadyGate } from './ReadyGate';
@@ -198,10 +198,12 @@ function RoomDetailBody({
                 <KV label={p.renter}>{name(detail.contract.renterName)}</KV>
               </p>
               <p className="tabular-nums text-ink-muted">
-                <KV label={p.contractStart}>{detail.contract.startDate}</KV>
+                <KV label={p.contractStart}>{formatDay(detail.contract.startDate, locale)}</KV>
                 <Dot />
                 <KV label={p.contractEnd}>
-                  {detail.contract.endDate ?? m.contracts.blank}
+                  {detail.contract.endDate
+                    ? formatDay(detail.contract.endDate, locale)
+                    : m.contracts.blank}
                 </KV>
               </p>
               <Link
@@ -258,14 +260,14 @@ function RoomDetailBody({
           <ul className="flex flex-col gap-1 tabular-nums text-ink-muted">
             {detail.electricity.slice(0, 6).map((r) => (
               <li key={`e-${r.period}`}>
-                <KV label={`${m.meters.kind.electricity} ${r.period}`}>
+                <KV label={`${m.meters.kind.electricity} ${formatPeriod(r.period, locale)}`}>
                   {r.reading} {r.unitsUsed !== null ? `(${r.unitsUsed})` : ''}
                 </KV>
               </li>
             ))}
             {detail.water.slice(0, 6).map((r) => (
               <li key={`w-${r.period}`}>
-                <KV label={`${m.meters.kind.water} ${r.period}`}>
+                <KV label={`${m.meters.kind.water} ${formatPeriod(r.period, locale)}`}>
                   {r.reading} {r.unitsUsed !== null ? `(${r.unitsUsed})` : ''}
                 </KV>
               </li>
@@ -442,7 +444,7 @@ function BuildingsRatesBody({
           </h2>
           {current ? (
             <p className="tabular-nums text-ink">
-              <KV label={p.rates.current}>{current.validFrom}</KV>
+              <KV label={p.rates.current}>{formatDay(current.validFrom, locale)}</KV>
               <Dot />
               <KV label={p.rates.electricityRate}>
                 {formatMoney(current.elecRateSatang, locale)}
@@ -458,7 +460,7 @@ function BuildingsRatesBody({
           <ul className="flex flex-col gap-1">
             {plans.map((plan) => (
               <li key={plan.id} className="tabular-nums text-ink-muted">
-                <KV label={p.rates.validFrom}>{plan.validFrom}</KV>
+                <KV label={p.rates.validFrom}>{formatDay(plan.validFrom, locale)}</KV>
               </li>
             ))}
           </ul>

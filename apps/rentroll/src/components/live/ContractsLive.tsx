@@ -20,7 +20,7 @@ import {
 import type { StoreState } from '@/src/client-store/store';
 import { roomStatus } from '@/src/domain/property';
 import { CHECKLIST_KEYS, CHECKLIST_LABELS } from '@/src/domain/move';
-import { translator, type Messages } from '@/src/i18n';
+import { translator, type Messages, formatDay } from '@/src/i18n';
 import { PageHeader } from '@/src/components/PageHeader';
 import { ReadyGate } from './ReadyGate';
 import { Dot, KV } from './KV';
@@ -112,7 +112,7 @@ function ContractsBody({ locale }: { locale: Locale }) {
         >
           <span className="tabular-nums text-ink">{c.roomNumber}</span>
           <span className="text-ink">{c.renterName ?? m.contracts.blank}</span>
-          <span className="tabular-nums text-ink-muted">{c.startDate}</span>
+          <span className="tabular-nums text-ink-muted">{formatDay(c.startDate, locale)}</span>
           <span className="text-ink-muted">
             {p.status[c.status as keyof typeof p.status] ?? c.status}
           </span>
@@ -189,9 +189,9 @@ function ContractDetailBody({
           </KV>
         </p>
         <p className="tabular-nums text-ink-muted">
-          <KV label={p.start}>{c.startDate}</KV>
+          <KV label={p.start}>{formatDay(c.startDate, locale)}</KV>
           <Dot />
-          <KV label={p.end}>{c.endDate ?? m.contracts.blank}</KV>
+          <KV label={p.end}>{c.endDate ? formatDay(c.endDate, locale) : m.contracts.blank}</KV>
         </p>
         <p className="text-ink-muted">
           {m.contracts.status[c.status as keyof typeof m.contracts.status] ??

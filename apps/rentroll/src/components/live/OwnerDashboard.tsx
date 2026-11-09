@@ -9,7 +9,7 @@ import { useStore } from '@/src/client-store/hooks';
 import { roomMap } from '@/src/client-store/selectors/property';
 import { dashboard } from '@/src/client-store/selectors/reports';
 import type { StoreState } from '@/src/client-store/store';
-import { translator } from '@/src/i18n';
+import { translator, formatPeriod } from '@/src/i18n';
 import { PageHeader } from '@/src/components/PageHeader';
 import { FloorPlan } from '@/src/components/property/FloorPlan';
 import { RoomPanel } from '@/src/components/property/RoomPanel';
@@ -392,7 +392,7 @@ function DashboardBody({ locale }: { locale: Locale }) {
               className="flex flex-col gap-0.5 border-b border-line py-2 last:border-b-0 md:flex-row md:items-baseline md:justify-between md:gap-4"
             >
               <div className="flex items-baseline justify-between gap-4">
-                <span className="tabular-nums text-ink-muted">{r.period}</span>
+                <span className="tabular-nums text-ink-muted">{formatPeriod(r.period, locale)}</span>
                 <span className="tabular-nums text-ink">
                   {formatMoney(r.billedSatang, locale)}
                 </span>

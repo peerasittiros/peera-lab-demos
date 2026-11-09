@@ -1,7 +1,7 @@
 import type { Locale } from '@peera/i18n';
 import { formatMoney } from '@peera/i18n';
 import { cn, ts } from '@peera/ui';
-import { translator } from '../../i18n';
+import { translator, formatDay, formatPeriod } from '../../i18n';
 
 export type DocumentLine = {
   id: string;
@@ -34,20 +34,6 @@ const SIZE = {
   a4: { width: '210mm', page: 'A4' },
   a5: { width: '148mm', page: 'A5' },
 } as const;
-
-/** Thai dates use the Buddhist year (พ.ศ.) through Intl (CLAUDE.md, "Rules that are easy to break"). */
-function dateText(iso: string, locale: Locale): string {
-  const formatter = new Intl.DateTimeFormat(
-    locale === 'th' ? 'th-TH' : 'en-GB',
-    {
-      day: 'numeric',
-      month: 'short',
-      year: 'numeric',
-      timeZone: 'Asia/Bangkok',
-    },
-  );
-  return formatter.format(new Date(`${iso}T12:00:00+07:00`));
-}
 
 /**
  * The invoice as a printable document (01 §6.3, §8 screen 5). Two languages can print together: Thai above English,
@@ -110,13 +96,13 @@ export function InvoiceDocument({
             {invoice.period ? (
               <>
                 <dt className="text-ink-muted">{p.period}</dt>
-                <dd className="tabular-nums">{invoice.period}</dd>
+                <dd>{formatPeriod(invoice.period, locale)}</dd>
               </>
             ) : null}
             <dt className="text-ink-muted">{p.issued}</dt>
-            <dd>{dateText(invoice.issueDate, locale)}</dd>
+            <dd>{formatDay(invoice.issueDate, locale)}</dd>
             <dt className="text-ink-muted">{p.due}</dt>
-            <dd>{dateText(invoice.dueDate, locale)}</dd>
+            <dd>{formatDay(invoice.dueDate, locale)}</dd>
           </dl>
         </header>
 

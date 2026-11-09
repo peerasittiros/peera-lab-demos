@@ -12,7 +12,7 @@ import {
 import type { StoreState } from '@/src/client-store/store';
 import { baht, toCsv } from '@/src/domain/csv';
 import { addMonths } from '@/src/domain/dates';
-import { translator, type Messages } from '@/src/i18n';
+import { formatPeriod, translator, type Messages } from '@/src/i18n';
 import { PageHeader } from '@/src/components/PageHeader';
 import { ReadyGate } from './ReadyGate';
 
@@ -79,7 +79,7 @@ function ReportBody({
                 focusRing,
               )}
             >
-              {mo}
+              {formatPeriod(mo, locale)}
             </button>
           ))}
         </nav>

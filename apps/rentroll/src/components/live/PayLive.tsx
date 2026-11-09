@@ -13,7 +13,7 @@ import { loadPayInvoice } from '@/src/client-store/selectors/live';
 import { downscaleSlip, rememberSlip } from '@/src/client-store/slip-images';
 import type { SlipKind } from '@/src/client-store/ops';
 import { PageHeader } from '@/src/components/PageHeader';
-import { translator, type Messages } from '@/src/i18n';
+import { translator, type Messages, formatDay } from '@/src/i18n';
 import { ReadyGate } from './ReadyGate';
 
 /** Pay screen (SPEC §4 T3): what is owed, a sample QR, and the slip. Reads and writes the browser store. */
@@ -63,7 +63,7 @@ function PayBody({ locale, invoiceId }: { locale: Locale; invoiceId: string }) {
           </p>
           <p className="text-ink-muted">
             <span>{p.due}</span>{' '}
-            <span className="tabular-nums">{i.dueDate}</span>
+            <span className="tabular-nums">{formatDay(i.dueDate, locale)}</span>
           </p>
           <p className="tabular-nums text-ink">{i.number}</p>
           <div className="flex flex-col gap-2 rounded-sm border border-dashed border-line-strong p-3">

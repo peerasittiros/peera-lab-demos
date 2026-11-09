@@ -8,7 +8,7 @@ import { useStore } from '@/src/client-store/hooks';
 import { useRole } from '@/src/client-store/role';
 import { actPostAnnouncement } from '@/src/client-store/commands/property';
 import type { StoreState } from '@/src/client-store/store';
-import { translator } from '@/src/i18n';
+import { formatDay, translator } from '@/src/i18n';
 import { ReadyGate } from './ReadyGate';
 
 const viewOf = (s: StoreState) => ({
@@ -135,7 +135,7 @@ function AnnouncementsBody({ locale }: { locale: Locale }) {
             </h2>
             <p className="text-ink">{locale === 'th' ? a.bodyTh : a.bodyEn}</p>
             <span className="tabular-nums text-ink-muted">
-              {a.publishedAt.slice(0, 10)}
+              {formatDay(a.publishedAt, locale)}
             </span>
           </article>
         ))}

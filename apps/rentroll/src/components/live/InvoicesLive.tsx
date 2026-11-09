@@ -13,7 +13,7 @@ import {
   visitorInvoiceIds,
 } from '@/src/client-store/selectors/billing';
 import type { StoreState } from '@/src/client-store/store';
-import { translator, type Messages } from '@/src/i18n';
+import { formatDay, formatPeriod, translator, type Messages } from '@/src/i18n';
 import { ReadyGate } from './ReadyGate';
 import { CreditNoteForm } from './OwnerEdits';
 import { publicLinkFor } from './public-link';
@@ -97,7 +97,7 @@ function InvoicesBody({ locale }: { locale: Locale }) {
             <option value="all">{m.ownerLive.allMonths}</option>
             {months.map((mo) => (
               <option key={mo} value={mo}>
-                {mo}
+                {formatPeriod(mo, locale)}
               </option>
             ))}
           </select>
@@ -174,7 +174,9 @@ function InvoiceRow({
     const url = await linkOf();
     if (url) window.open(url, '_blank', 'noopener');
   };
-  const dateText = inv.period ?? inv.dueDate;
+  const dateText = inv.period
+    ? formatPeriod(inv.period, locale)
+    : formatDay(inv.dueDate, locale);
 
   return (
     <li className="grid gap-x-4 gap-y-2 border-b border-line px-3 py-3 odd:bg-surface-sunken md:grid-cols-[1fr_1fr_1fr_auto_auto_auto]">

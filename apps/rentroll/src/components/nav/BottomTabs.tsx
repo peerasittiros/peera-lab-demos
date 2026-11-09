@@ -36,7 +36,11 @@ export function BottomTabs({
           <li key={item.key}>
             <TabLink
               locale={locale}
-              label={m.nav[item.key as NavKey]}
+              // The tab bar is narrow: a few sections have a shorter tab label (`nav.tabs`).
+              label={
+                m.nav.tabs[item.key as keyof typeof m.nav.tabs] ??
+                m.nav[item.key as NavKey]
+              }
               href={`/${locale}${item.path}`}
               active={isNavActive(item, pathname, locale)}
               Icon={item.icon}

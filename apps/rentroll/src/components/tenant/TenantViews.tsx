@@ -2,7 +2,7 @@ import type { Locale } from '@peera/i18n';
 import { formatMoney } from '@peera/i18n';
 import { cn, focusRing, ts } from '@peera/ui';
 import Link from 'next/link';
-import { translator } from '../../i18n';
+import { formatDay, formatPeriod, translator } from '../../i18n';
 
 /** What the tenant home shows. The server query and the store selector both return this shape. */
 export type HomeView = {
@@ -57,7 +57,7 @@ export function TenantHome({
             <p className="text-ink-muted">
               <span>{p.due}</span>{' '}
               <span className="tabular-nums text-ink">
-                {home.nextInvoice.dueDate}
+                {formatDay(home.nextInvoice.dueDate, locale)}
               </span>
             </p>
             <Link
@@ -147,7 +147,7 @@ export function BillsView({
                 key={u.period}
                 className="grid grid-cols-[6rem_1fr] items-center gap-3"
               >
-                <span className="tabular-nums text-ink-muted">{u.period}</span>
+                <span className="tabular-nums text-ink-muted">{formatPeriod(u.period, locale)}</span>
                 <div className="flex flex-col gap-1">
                   <span className="flex items-center gap-2 text-ink">
                     <span
@@ -196,7 +196,9 @@ export function BillsView({
                 >
                   <span className="tabular-nums">{b.number}</span>
                   <span className="tabular-nums text-ink-muted">
-                    {b.period ?? b.dueDate}
+                    {b.period
+                      ? formatPeriod(b.period, locale)
+                      : formatDay(b.dueDate, locale)}
                   </span>
                   <span className="tabular-nums">
                     {formatMoney(b.totalSatang, locale)}
