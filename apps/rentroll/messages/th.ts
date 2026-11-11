@@ -58,7 +58,7 @@ export const th: typeof en = {
     theme: 'ธีม',
     themeLight: 'สว่าง',
     themeDark: 'มืด',
-    tabs: { meters: 'จดมิเตอร์' },
+    tabs: { meters: 'จดมิเตอร์', myRepairs: 'แจ้งซ่อม' },
     groups: {
       month: 'รอบเดือนนี้',
       people: 'ห้องและผู้เช่า',
@@ -297,6 +297,7 @@ export const th: typeof en = {
     intro:
       'งานแต่ละชิ้นเลื่อนผ่านคอลัมน์ได้ การเปลี่ยนสถานะ ข้อความ และการเรียกเก็บจะขึ้นที่มุมผู้เช่าทันทีที่บันทึก',
     empty: 'ยังไม่มีคำขอแจ้งซ่อม',
+    statusFor: 'สถานะงานซ่อม ห้อง {room}',
     grab: 'ย้าย',
     grabHint:
       'ลากการ์ด หรือโฟกัสที่ปุ่มย้าย กดเว้นวรรค ใช้ปุ่มลูกศร แล้วกดเว้นวรรคอีกครั้ง',
@@ -353,6 +354,8 @@ export const th: typeof en = {
       slipAlt: 'สลิปการโอน',
     },
     home: {
+      roomOnFloor: 'ห้อง {room} ชั้น {floor}',
+      floorStrip: 'ห้องของคุณบนชั้น {floor}',
       room: 'ห้อง',
       balance: 'ยอดที่ต้องชำระ',
       due: 'กำหนดชำระ',
@@ -485,8 +488,21 @@ export const th: typeof en = {
     approve: 'อนุมัติ',
     reject: 'ปฏิเสธ',
     reason: 'เหตุผลที่ปฏิเสธ',
-    shortcuts: 'ปุ่มลัด: A อนุมัติ, R ไปที่ช่องเหตุผล',
+    shortcuts: 'ปุ่มลัด: A อนุมัติ, R ขอให้ผู้เช่าแก้',
     receipt: 'ใบเสร็จ',
+    slipOf: 'สลิปที่ {index} จาก {total}',
+    matches: 'ตรงกับยอดที่ค้าง',
+    short: 'น้อยกว่ายอดค้าง {amount}',
+    over: 'มากกว่ายอดค้าง {amount}',
+    askTenant: 'ขอให้ผู้เช่าแก้',
+    askReason: 'บอกผู้เช่าว่าต้องแก้อะไร',
+    sendAsk: 'ส่งกลับให้ผู้เช่า',
+    approvedDone: 'อนุมัติแล้ว ใบเสร็จ {receipt}',
+    askedDone: 'ส่งกลับให้ผู้เช่าแล้ว',
+    nextSlip: 'ดูสลิปถัดไป',
+    queueDone: 'ตรวจครบทุกสลิปแล้ว',
+    billsToSettle: 'ใบแจ้งหนี้ที่จะตัดยอด เก่าสุดก่อน',
+    changeAmount: 'อนุมัติยอดอื่น',
     status: {
       pending_review: 'รอตรวจสอบ',
       approved: 'อนุมัติแล้ว',
@@ -825,6 +841,7 @@ export const th: typeof en = {
       save: 'บันทึกตึก',
     },
     roomTypes: {
+      rowHead: 'รายละเอียด',
       title: 'ประเภทห้อง',
       intro:
         'ค่าเช่าและเงินประกันของแต่ละประเภท การแก้ประเภทไม่เปลี่ยนสัญญาหรือใบแจ้งหนี้ที่ออกไปแล้ว',

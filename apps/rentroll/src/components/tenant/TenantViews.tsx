@@ -1,12 +1,15 @@
 import type { Locale } from '@peera/i18n';
 import { formatMoney } from '@peera/i18n';
 import { cn, focusRing, ts } from '@peera/ui';
+import { Megaphone, Receipt, Wrench, type LucideIcon } from 'lucide-react';
 import Link from 'next/link';
 import { formatDay, formatPeriod, translator } from '../../i18n';
 
 /** What the tenant home shows. The server query and the store selector both return this shape. */
 export type HomeView = {
   roomNumber: string;
+  floor: number | null;
+  floorRooms: string[];
   balanceSatang: number;
   nextInvoice: { id: string; dueDate: string } | null;
   announcements: {
@@ -18,7 +21,10 @@ export type HomeView = {
   }[];
 };
 
-/** Balance card, due date, Pay now, tiles and the latest announcement (01 §8 screen 6). */
+/**
+ * The tenant's home (ux-v2/rentroll.md › Tenant view): the amount due card with the floor strip (their room among the
+ * rooms on their floor), the due date and Pay, then tiles for bills, repairs and notices, and the latest notices.
+ */
 export function TenantHome({
   locale,
   home,
@@ -26,35 +32,69 @@ export function TenantHome({
   locale: Locale;
   home: HomeView | null;
 }) {
-  const { m } = translator(locale);
+  const { m, t } = translator(locale);
   const p = m.tenant.home;
   if (!home) return <p className="text-ink-muted">{m.tenant.home.none}</p>;
   const base = `/${locale}`;
-  const tile = (href: string, label: string) => (
+  const tile = (href: string, label: string, Icon: LucideIcon) => (
     <Link
       href={`${base}${href}`}
       className={cn(
-        'flex min-h-[44px] items-center justify-center rounded-sm border border-line bg-surface-raised px-3 py-4 text-center text-ink hover:bg-surface-sunken',
+        ts('ui', locale),
+        'flex min-h-20 flex-col items-center justify-center gap-2 rounded-sm border border-line bg-surface-raised px-2 py-3 text-center text-ink hover:bg-surface-sunken',
         focusRing,
       )}
     >
+      <Icon
+        aria-hidden
+        size={22}
+        strokeWidth={1.75}
+        className="text-product-accent"
+      />
       {label}
     </Link>
   );
   return (
     <div className="flex flex-col gap-4" lang={locale}>
-      <section className="flex flex-col gap-3 rounded-sm border border-line bg-surface-raised p-4 md:p-5">
-        <p className="text-ink-muted">
-          <span>{p.room}</span>{' '}
-          <span className="tabular-nums text-ink">{home.roomNumber}</span>
-        </p>
-        <p className="text-ink-muted">{p.balance}</p>
-        <p className={cn(ts('headline-md', locale), 'tabular-nums text-ink')}>
+      <section className="flex flex-col gap-3 rounded-sm border border-line bg-surface-raised p-5">
+        <div className="flex flex-wrap items-center justify-between gap-3">
+          <p className="m-0 text-ink">
+            {home.floor === null
+              ? `${p.room} ${home.roomNumber}`
+              : t('tenant.home.roomOnFloor', {
+                  room: home.roomNumber,
+                  floor: home.floor,
+                })}
+          </p>
+          {home.floor !== null && home.floorRooms.length > 1 ? (
+            // The floor strip (the v2 motif): one cell per room on the floor, the tenant's filled. Decorative: the
+            // sentence beside it says the same.
+            <span
+              aria-hidden
+              className="flex gap-0.5"
+              title={t('tenant.home.floorStrip', { floor: home.floor })}
+            >
+              {home.floorRooms.map((number) => (
+                <span
+                  key={number}
+                  className={cn(
+                    'h-3 w-2 rounded-[2px] border',
+                    number === home.roomNumber
+                      ? 'border-product-accent bg-product-accent'
+                      : 'border-line-strong bg-transparent',
+                  )}
+                />
+              ))}
+            </span>
+          ) : null}
+        </div>
+        <p className="m-0 text-ink-muted">{p.balance}</p>
+        <p className="money-lg m-0 text-ink">
           {formatMoney(home.balanceSatang, locale)}
         </p>
         {home.nextInvoice ? (
           <>
-            <p className="text-ink-muted">
+            <p className="m-0 text-ink-muted">
               <span>{p.due}</span>{' '}
               <span className="tabular-nums text-ink">
                 {formatDay(home.nextInvoice.dueDate, locale)}
@@ -63,7 +103,8 @@ export function TenantHome({
             <Link
               href={`${base}/t/pay/${home.nextInvoice.id}`}
               className={cn(
-                'inline-flex min-h-[44px] items-center justify-center rounded-sm bg-product-accent px-4 text-product-on-accent',
+                ts('ui', locale),
+                'inline-flex min-h-12 w-full items-center justify-center rounded-sm bg-product-accent px-4 font-semibold text-product-on-accent hover:bg-primary-hover',
                 focusRing,
               )}
             >
@@ -76,9 +117,9 @@ export function TenantHome({
       </section>
 
       <nav className="grid grid-cols-3 gap-2" aria-label={p.tiles.bills}>
-        {tile('/t/bills', p.tiles.bills)}
-        {tile('/t/repairs', p.tiles.repairs)}
-        {tile('/t#announcements', p.tiles.news)}
+        {tile('/t/bills', p.tiles.bills, Receipt)}
+        {tile('/t/repairs/new', p.tiles.repairs, Wrench)}
+        {tile('/t#announcements', p.tiles.news, Megaphone)}
       </nav>
 
       <section
@@ -147,7 +188,9 @@ export function BillsView({
                 key={u.period}
                 className="grid grid-cols-[6rem_1fr] items-center gap-3"
               >
-                <span className="tabular-nums text-ink-muted">{formatPeriod(u.period, locale)}</span>
+                <span className="tabular-nums text-ink-muted">
+                  {formatPeriod(u.period, locale)}
+                </span>
                 <div className="flex flex-col gap-1">
                   <span className="flex items-center gap-2 text-ink">
                     <span

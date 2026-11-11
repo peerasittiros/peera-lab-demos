@@ -78,8 +78,20 @@ export function loadTenantHome(data: Data, today: string) {
     (t) =>
       t.roomId === current.roomId && OPEN_TICKET_STATUSES.includes(t.status),
   ).length;
+  // The floor strip on the tenant's card: the rooms on their floor, in walking order.
+  const room = data.room.find((r) => r.id === current.roomId);
+  const floorRooms = room
+    ? data.room
+        .filter(
+          (r) => r.buildingId === room.buildingId && r.floor === room.floor,
+        )
+        .sort((a, b) => a.sort - b.sort || a.number.localeCompare(b.number))
+        .map((r) => r.number)
+    : [];
   return {
     ...current,
+    floor: room?.floor ?? null,
+    floorRooms,
     balanceSatang: owed.reduce((sum, i) => sum + i.outstanding, 0),
     nextInvoice: owed[0] ?? null,
     openRepairs,

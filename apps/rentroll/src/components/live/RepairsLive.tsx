@@ -61,7 +61,7 @@ export function RepairsBoardLive({ locale }: { locale: Locale }) {
 }
 
 function RepairsBoardBody({ locale }: { locale: Locale }) {
-  const { m } = translator(locale);
+  const { m, t: tr } = translator(locale);
   const p = m.ownerRepairs;
   const tickets = useStore(boardView);
   const role = useRole();
@@ -110,7 +110,9 @@ function RepairsBoardBody({ locale }: { locale: Locale }) {
                   <Select
                     locale={locale}
                     value={t.status}
-                    aria-label={p.grab}
+                    aria-label={tr('ownerRepairs.statusFor', {
+                      room: t.roomNumber,
+                    })}
                     onValueChange={(value) => {
                       const result = actMoveRepair(contextOf(role), {
                         ticketId: t.id,

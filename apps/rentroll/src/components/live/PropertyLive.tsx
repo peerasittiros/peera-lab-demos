@@ -198,7 +198,9 @@ function RoomDetailBody({
                 <KV label={p.renter}>{name(detail.contract.renterName)}</KV>
               </p>
               <p className="tabular-nums text-ink-muted">
-                <KV label={p.contractStart}>{formatDay(detail.contract.startDate, locale)}</KV>
+                <KV label={p.contractStart}>
+                  {formatDay(detail.contract.startDate, locale)}
+                </KV>
                 <Dot />
                 <KV label={p.contractEnd}>
                   {detail.contract.endDate
@@ -260,14 +262,18 @@ function RoomDetailBody({
           <ul className="flex flex-col gap-1 tabular-nums text-ink-muted">
             {detail.electricity.slice(0, 6).map((r) => (
               <li key={`e-${r.period}`}>
-                <KV label={`${m.meters.kind.electricity} ${formatPeriod(r.period, locale)}`}>
+                <KV
+                  label={`${m.meters.kind.electricity} ${formatPeriod(r.period, locale)}`}
+                >
                   {r.reading} {r.unitsUsed !== null ? `(${r.unitsUsed})` : ''}
                 </KV>
               </li>
             ))}
             {detail.water.slice(0, 6).map((r) => (
               <li key={`w-${r.period}`}>
-                <KV label={`${m.meters.kind.water} ${formatPeriod(r.period, locale)}`}>
+                <KV
+                  label={`${m.meters.kind.water} ${formatPeriod(r.period, locale)}`}
+                >
                   {r.reading} {r.unitsUsed !== null ? `(${r.unitsUsed})` : ''}
                 </KV>
               </li>
@@ -307,7 +313,9 @@ function RoomTypesBody({ locale }: { locale: Locale }) {
       <table className="w-full border-collapse text-left">
         <thead>
           <tr className="border-b border-line text-ink-muted">
-            <th scope="col" className="py-2 font-normal" />
+            <th scope="col" className="py-2 font-normal">
+              <span className="sr-only">{m.property.roomTypes.rowHead}</span>
+            </th>
             {types.map((t) => (
               <th key={t.id} scope="col" className="py-2 font-normal text-ink">
                 {locale === 'th' ? t.nameTh : t.nameEn}
@@ -444,7 +452,9 @@ function BuildingsRatesBody({
           </h2>
           {current ? (
             <p className="tabular-nums text-ink">
-              <KV label={p.rates.current}>{formatDay(current.validFrom, locale)}</KV>
+              <KV label={p.rates.current}>
+                {formatDay(current.validFrom, locale)}
+              </KV>
               <Dot />
               <KV label={p.rates.electricityRate}>
                 {formatMoney(current.elecRateSatang, locale)}
@@ -460,7 +470,9 @@ function BuildingsRatesBody({
           <ul className="flex flex-col gap-1">
             {plans.map((plan) => (
               <li key={plan.id} className="tabular-nums text-ink-muted">
-                <KV label={p.rates.validFrom}>{formatDay(plan.validFrom, locale)}</KV>
+                <KV label={p.rates.validFrom}>
+                  {formatDay(plan.validFrom, locale)}
+                </KV>
               </li>
             ))}
           </ul>

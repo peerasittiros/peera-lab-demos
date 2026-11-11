@@ -58,7 +58,7 @@ export const en = defineMessages()({
     theme: 'Theme',
     themeLight: 'Light',
     themeDark: 'Dark',
-    tabs: { meters: 'Meters' },
+    tabs: { meters: 'Meters', myRepairs: 'Repairs' },
     groups: {
       month: 'This month',
       people: 'Rooms and tenants',
@@ -227,7 +227,10 @@ export const en = defineMessages()({
     noBillsYet: 'No bills this month yet',
     noPaymentsYet: 'Nothing paid yet',
     paidShare: '{percent}% of the amount billed',
-    overdueBills: { one: '{count} bill past its due date', other: '{count} bills past their due date' },
+    overdueBills: {
+      one: '{count} bill past its due date',
+      other: '{count} bills past their due date',
+    },
     seeOverdue: 'See overdue bills',
     rooms: 'Rooms',
     floorPick: 'Floor',
@@ -295,6 +298,7 @@ export const en = defineMessages()({
     intro:
       'Each ticket moves through the columns. Status changes, notes and bills show on the tenant side as soon as they are saved.',
     empty: 'No repair requests yet.',
+    statusFor: 'Repair status, room {room}',
     grab: 'Move',
     grabHint:
       'Drag the card, or focus Move, press space, use the arrow keys, then space.',
@@ -350,6 +354,8 @@ export const en = defineMessages()({
       slipAlt: 'Transfer slip',
     },
     home: {
+      roomOnFloor: 'Room {room}, floor {floor}',
+      floorStrip: 'Your room on floor {floor}',
       room: 'Room',
       balance: 'Balance due',
       due: 'Due',
@@ -484,8 +490,21 @@ export const en = defineMessages()({
     approve: 'Approve',
     reject: 'Reject',
     reason: 'Reason for rejecting',
-    shortcuts: 'Keys: A approves, R moves to the reason box.',
+    shortcuts: 'Keys: A approves, R asks the tenant.',
     receipt: 'Receipt',
+    slipOf: 'Slip {index} of {total}',
+    matches: 'Matches what is owed',
+    short: '{amount} less than owed',
+    over: '{amount} more than owed',
+    askTenant: 'Ask the tenant',
+    askReason: 'What the tenant should fix',
+    sendAsk: 'Send to the tenant',
+    approvedDone: 'Approved. Receipt {receipt}.',
+    askedDone: 'Sent back to the tenant.',
+    nextSlip: 'Next slip',
+    queueDone: 'Every slip is checked.',
+    billsToSettle: 'Bills it settles, oldest first',
+    changeAmount: 'Approve a different amount',
     status: {
       pending_review: 'Waiting for review',
       approved: 'Approved',
@@ -781,7 +800,8 @@ export const en = defineMessages()({
     perPerson: 'Billed per person',
     state: 'Check',
     table: 'Meter readings, floor {floor}',
-    enterHint: 'Type a reading and press Enter: it saves and moves to the next room.',
+    enterHint:
+      'Type a reading and press Enter: it saves and moves to the next room.',
     notRead: 'Not read yet',
     errors: {
       future: 'You cannot read a period that has not started.',
@@ -830,6 +850,7 @@ export const en = defineMessages()({
       save: 'Save building',
     },
     roomTypes: {
+      rowHead: 'Detail',
       title: 'Room types',
       intro:
         'Rent and deposit per type. Changing a type does not change contracts or invoices already issued.',
@@ -908,7 +929,8 @@ export const en = defineMessages()({
     },
   },
   settings: {
-    intro: 'The buildings, the room types and the rates that bills are worked out from.',
+    intro:
+      'The buildings, the room types and the rates that bills are worked out from.',
   },
   placeholder: {
     dashboard: 'Overview',

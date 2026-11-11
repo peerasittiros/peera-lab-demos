@@ -16,7 +16,7 @@ import {
 import { useState } from 'react';
 import { useStore } from '@/src/client-store/hooks';
 import type { TenantMessage } from '@/src/client-store/selectors/live';
-import { translator } from '@/src/i18n';
+import { formatDay, translator } from '@/src/i18n';
 import { TenantHome } from '@/src/components/tenant/TenantViews';
 import { ReadyGate } from './ReadyGate';
 import { InstallButton } from '@/src/components/pwa/InstallButton';
@@ -119,7 +119,7 @@ function toChat(
             rows: [
               [p.billNumber, message.number],
               [p.billTotal, formatMoney(message.totalSatang, locale)],
-              [p.billDue, message.dueDate],
+              [p.billDue, formatDay(message.dueDate, locale)],
             ],
           },
         };

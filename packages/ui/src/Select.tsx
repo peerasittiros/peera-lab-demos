@@ -22,6 +22,8 @@ export type SelectProps = {
   disabled?: boolean;
   name?: string;
   id?: string;
+  /** Names the trigger when the Select is not inside a `Field` (a status picker on a card, for example). */
+  'aria-label'?: string;
   'aria-describedby'?: string;
   'aria-invalid'?: boolean;
   required?: boolean;
@@ -59,6 +61,7 @@ export function Select({
       <RadixSelect.Trigger
         lang={locale}
         id={wiring.id}
+        aria-label={aria['aria-label']}
         aria-describedby={wiring['aria-describedby']}
         aria-invalid={wiring['aria-invalid']}
         className={cn(
