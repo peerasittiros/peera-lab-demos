@@ -1,15 +1,17 @@
 'use client';
 
 import type { Locale } from '@peera/i18n';
-import { Button, cn, focusRing, ts } from '@peera/ui';
+import { cn, ErrorState, Skeleton } from '@peera/ui';
 import type { ReactNode } from 'react';
 import { getStore } from '@/src/client-store/instance';
 import { useStoreBoot, useStoreStatus } from '@/src/client-store/hooks';
 import { translator } from '@/src/i18n';
 
 /**
- * Starts the browser store and shows its state where the live screens are: a loading placeholder, an error with a retry,
- * then the screen. Above the screen it says when the data is memory-only or was refreshed or is stale (SPEC §2.3).
+ * Starts the browser store and shows its state where the live screens are: skeleton rows while loading, then the screen.
+ * When the snapshot fails and nothing is stored in this browser there is nothing to show, so the screen is one error
+ * with Try again (the Stockline pattern). Above the screen it says when the data is memory-only or was refreshed or is
+ * stale (SPEC §2.3).
  */
 export function ReadyGate({
   locale,
@@ -23,34 +25,18 @@ export function ReadyGate({
   const { m } = translator(locale);
   const p = m.tenant.live;
 
-  if (status === 'loading') {
-    return (
-      <div role="status" lang={locale} className="flex flex-col gap-3">
-        <p className={cn(ts('body', locale), 'text-ink-muted')}>{p.loading}</p>
-        <div aria-hidden className="h-24 rounded-sm bg-surface-sunken" />
-        <div aria-hidden className="h-24 rounded-sm bg-surface-sunken" />
-      </div>
-    );
-  }
+  if (status === 'loading') return <Skeleton locale={locale} lines={4} />;
 
   if (status === 'error') {
     return (
-      <div
-        role="alert"
-        lang={locale}
-        className="flex flex-col items-start gap-3"
-      >
-        <p className={cn(ts('body', locale), 'text-ink')}>{p.loadFailed}</p>
-        <Button
-          type="button"
-          variant="secondary"
-          locale={locale}
-          className={focusRing}
-          onClick={() => void getStore().start()}
-        >
-          {p.retry}
-        </Button>
-      </div>
+      <ErrorState
+        locale={locale}
+        title={p.loadFailed}
+        description={m.common.errorBody}
+        retryLabel={p.retry}
+        onRetry={() => void getStore().start()}
+        className="items-start text-left"
+      />
     );
   }
 

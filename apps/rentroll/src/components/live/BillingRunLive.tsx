@@ -18,6 +18,8 @@ import type { StoreState } from '@/src/client-store/store';
 import { missingReadings } from '@/src/domain/billing-run';
 import { formatDay, formatPeriod, translator, type Messages } from '@/src/i18n';
 import { PageHeader } from '@/src/components/PageHeader';
+import { PaidStamp } from '@/src/components/property/PaidStamp';
+import { RollingNumber } from '@/src/components/RollingNumber';
 import { ReadyGate } from './ReadyGate';
 import type { CommandContext } from '@/src/client-store/commands/payments';
 
@@ -370,8 +372,13 @@ function DraftCard({
             {invoice.number}
           </span>
           <span className={cn(ts('body-sm', locale), 'text-ink-muted')}>
-            {p.status[invoice.status as keyof typeof p.status] ??
-              invoice.status}
+            {/* A paid bill says so with the stamp below the total; the word stays here for screen readers. */}
+            {invoice.status === 'paid' ? (
+              <span className="sr-only">{p.status.paid}</span>
+            ) : (
+              (p.status[invoice.status as keyof typeof p.status] ??
+              invoice.status)
+            )}
           </span>
         </div>
       </header>
@@ -437,9 +444,17 @@ function DraftCard({
           {p.billTotal}
         </span>
         <span className="money-lg text-ink">
-          {formatMoney(shownTotal, locale)}
+          <RollingNumber
+            value={shownTotal}
+            format={(value) => formatMoney(value, locale)}
+          />
         </span>
       </div>
+      {invoice.status === 'paid' ? (
+        <div className="flex justify-end">
+          <PaidStamp locale={locale} word={p.status.paid} />
+        </div>
+      ) : null}
       <p className="m-0 text-ink-muted">
         {t('billing.dueOn', { date: formatDay(invoice.dueDate, locale) })}
       </p>

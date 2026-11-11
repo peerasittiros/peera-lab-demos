@@ -6,6 +6,7 @@ import { formatMoney } from '@peera/i18n';
 import {
   Button,
   cn,
+  EmptyState,
   focusRing,
   Sheet,
   SheetContent,
@@ -13,6 +14,7 @@ import {
   SheetTitle,
   toast,
 } from '@peera/ui';
+import Link from 'next/link';
 import { useState } from 'react';
 import { getStore } from '@/src/client-store/instance';
 import { useStore } from '@/src/client-store/hooks';
@@ -47,7 +49,24 @@ function OverdueBody({ locale }: { locale: Locale }) {
   const [previewFor, setPreviewFor] = useState<string | null>(null);
   const preview = rows.find((r) => r.id === previewFor) ?? null;
 
-  if (rows.length === 0) return <p className="text-ink-muted">{p.empty}</p>;
+  if (rows.length === 0)
+    return (
+      <EmptyState
+        locale={locale}
+        title={p.empty}
+        action={
+          <Link
+            href={`/${locale}/owner/invoices`}
+            className={cn(
+              'inline-flex min-h-11 items-center rounded-sm px-3 font-medium text-product-accent underline-offset-4 hover:underline',
+              focusRing,
+            )}
+          >
+            {m.nav.invoices}
+          </Link>
+        }
+      />
+    );
   return (
     <>
       <ul className="flex flex-col">

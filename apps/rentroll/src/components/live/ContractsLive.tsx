@@ -2,7 +2,16 @@
 
 import type { Locale } from '@peera/i18n';
 import { formatMoney } from '@peera/i18n';
-import { Button, cn, Field, focusRing, Input, Select, toast } from '@peera/ui';
+import {
+  Button,
+  cn,
+  EmptyState,
+  Field,
+  focusRing,
+  Input,
+  Select,
+  toast,
+} from '@peera/ui';
 import Link from 'next/link';
 import { useCallback, useState, type FormEvent } from 'react';
 import { getStore } from '@/src/client-store/instance';
@@ -102,7 +111,24 @@ function ContractsBody({ locale }: { locale: Locale }) {
   const rows = useStore(
     useCallback((s: StoreState) => contractsList(s.data), []),
   );
-  if (rows.length === 0) return <p className="text-ink-muted">{p.empty}</p>;
+  if (rows.length === 0)
+    return (
+      <EmptyState
+        locale={locale}
+        title={p.empty}
+        action={
+          <Link
+            href={`/${locale}/owner/move-in`}
+            className={cn(
+              'inline-flex min-h-11 items-center rounded-sm px-3 font-medium text-product-accent underline-offset-4 hover:underline',
+              focusRing,
+            )}
+          >
+            {m.nav.moveIn}
+          </Link>
+        }
+      />
+    );
   return (
     <ul className="flex flex-col">
       {rows.map((c) => (
@@ -112,7 +138,9 @@ function ContractsBody({ locale }: { locale: Locale }) {
         >
           <span className="tabular-nums text-ink">{c.roomNumber}</span>
           <span className="text-ink">{c.renterName ?? m.contracts.blank}</span>
-          <span className="tabular-nums text-ink-muted">{formatDay(c.startDate, locale)}</span>
+          <span className="tabular-nums text-ink-muted">
+            {formatDay(c.startDate, locale)}
+          </span>
           <span className="text-ink-muted">
             {p.status[c.status as keyof typeof p.status] ?? c.status}
           </span>
@@ -191,7 +219,9 @@ function ContractDetailBody({
         <p className="tabular-nums text-ink-muted">
           <KV label={p.start}>{formatDay(c.startDate, locale)}</KV>
           <Dot />
-          <KV label={p.end}>{c.endDate ? formatDay(c.endDate, locale) : m.contracts.blank}</KV>
+          <KV label={p.end}>
+            {c.endDate ? formatDay(c.endDate, locale) : m.contracts.blank}
+          </KV>
         </p>
         <p className="text-ink-muted">
           {m.contracts.status[c.status as keyof typeof m.contracts.status] ??

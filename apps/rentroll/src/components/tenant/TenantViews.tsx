@@ -1,8 +1,9 @@
 import type { Locale } from '@peera/i18n';
 import { formatMoney } from '@peera/i18n';
-import { cn, focusRing, ts } from '@peera/ui';
+import { cn, EmptyState, focusRing, ts } from '@peera/ui';
 import { Megaphone, Receipt, Wrench, type LucideIcon } from 'lucide-react';
 import Link from 'next/link';
+import { PaidStamp } from '../property/PaidStamp';
 import { formatDay, formatPeriod, translator } from '../../i18n';
 
 /** What the tenant home shows. The server query and the store selector both return this shape. */
@@ -225,7 +226,21 @@ export function BillsView({
       <section className="flex flex-col gap-2">
         <h2 className={cn(ts('title', locale), 'text-ink')}>{p.title}</h2>
         {bills.length === 0 ? (
-          <p className="text-ink-muted">{p.noBills}</p>
+          <EmptyState
+            locale={locale}
+            title={p.noBills}
+            action={
+              <Link
+                href={`/${locale}/t`}
+                className={cn(
+                  'inline-flex min-h-11 items-center rounded-sm px-3 font-medium text-product-accent underline-offset-4 hover:underline',
+                  focusRing,
+                )}
+              >
+                {m.nav.home}
+              </Link>
+            }
+          />
         ) : (
           <ul className="flex flex-col gap-2">
             {bills.map((b) => (
@@ -247,7 +262,15 @@ export function BillsView({
                     {formatMoney(b.totalSatang, locale)}
                   </span>
                   <span className="text-ink-muted">
-                    {p.status[b.status as keyof typeof p.status] ?? b.status}
+                    {b.status === 'paid' ? (
+                      // The stamp draws once when the bill is settled; the word stays for screen readers.
+                      <>
+                        <PaidStamp locale={locale} word={p.status.paid} />
+                        <span className="sr-only">{p.status.paid}</span>
+                      </>
+                    ) : (
+                      (p.status[b.status as keyof typeof p.status] ?? b.status)
+                    )}
                   </span>
                 </Link>
               </li>

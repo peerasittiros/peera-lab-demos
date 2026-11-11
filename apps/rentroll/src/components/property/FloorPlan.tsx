@@ -11,7 +11,7 @@ import {
   type LucideIcon,
 } from 'lucide-react';
 import Link from 'next/link';
-import { useState, type MouseEvent } from 'react';
+import { useState, type CSSProperties, type MouseEvent } from 'react';
 import type { RoomStatus } from '@/src/domain/property';
 import { translator } from '@/src/i18n';
 
@@ -188,14 +188,19 @@ export function FloorPlan({
           className="md:hidden"
         />
       ) : null}
-      {floors.map((floor) => {
+      {floors.map((floor, index) => {
         const onFloor = rooms.filter((room) => room.floor === floor);
         const headingId = `floor-${floor}`;
         return (
           <section
             key={floor}
             aria-labelledby={headingId}
-            className={cn(pickFloor && floor !== current && 'max-md:hidden')}
+            className={cn(
+              'rr-floor',
+              pickFloor && floor !== current && 'max-md:hidden',
+            )}
+            // The fades run floor by floor, 40 ms apart, for the first eight floors (ux-v2 §4).
+            style={{ '--rr-floor-index': Math.min(index, 7) } as CSSProperties}
           >
             <FloorHeading
               id={headingId}
