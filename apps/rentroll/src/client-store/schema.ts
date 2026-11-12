@@ -22,7 +22,15 @@ type RelativeOnly =
   | 'minuteOfDay';
 type Stored<T extends Table> = Json<Omit<InferSelectModel<T>, RelativeOnly>>;
 
+/**
+ * Settings the visitor changes in this browser: the logo, the phone, the invoice note, the display names, and the floor
+ * and room-type order. They are not in the snapshot (the demo never writes to the server), so this table starts empty
+ * and the visitor's ops carry it (ux-v2/rentroll.md › Settings).
+ */
+export type SettingRow = { id: string; value: string; createdAt: string };
+
 export type Tables = {
+  setting: SettingRow;
   building: Stored<typeof s.building>;
   rate_plan: Stored<typeof s.ratePlan>;
   room_type: Stored<typeof s.roomType>;

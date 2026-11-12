@@ -1,9 +1,10 @@
 import { isLocale } from '@peera/i18n';
 import { notFound } from 'next/navigation';
 import type { ReactNode } from 'react';
-import { SectionBack } from '@/src/components/nav/SectionIndex';
+import { OwnerOnly } from '@/src/components/OwnerOnly';
+import { SettingsFrame } from '@/src/components/settings/SettingsFrame';
 
-/** Every settings page but the index starts with a way back to the list. */
+/** Settings is the owner's: the page names stay in a column from 768 px, and everyone else is sent home. */
 export default async function Layout({
   children,
   params,
@@ -14,9 +15,8 @@ export default async function Layout({
   const { locale } = await params;
   if (!isLocale(locale)) notFound();
   return (
-    <>
-      <SectionBack locale={locale} section="settings" />
-      {children}
-    </>
+    <OwnerOnly locale={locale}>
+      <SettingsFrame locale={locale}>{children}</SettingsFrame>
+    </OwnerOnly>
   );
 }

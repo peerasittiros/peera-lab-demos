@@ -19,6 +19,7 @@ import { ExternalLink, RotateCcw } from 'lucide-react';
 import { useStore } from '@/src/client-store/hooks';
 import type { Role } from '@/src/client-store/schema';
 import { demoTenantView } from '@/src/components/live/views';
+import { settingsValuesView } from '@/src/components/settings/selectors';
 import { translator } from '@/src/i18n';
 
 const ROLES: Role[] = ['owner', 'caretaker', 'tenant'];
@@ -47,10 +48,15 @@ export function AccountMenu({
   const kit = kitStrings[locale];
   const embedded = useEmbedded();
   const tenant = useStore(demoTenantView);
+  // Names saved in Settings › People win over the sample account names and the contract's tenant.
+  const names = useStore(settingsValuesView);
 
   // Owner and caretaker are sample accounts; the tenant is the person on room A-305's contract.
   const nameOf = (who: Role) =>
-    (who === 'tenant' && tenant?.renterName) || m.roles[who];
+    (who === 'owner' && names.ownerName) ||
+    (who === 'caretaker' && names.caretakerName) ||
+    (who === 'tenant' && (names.tenantName || tenant?.renterName)) ||
+    m.roles[who];
   const detailOf = (who: Role) =>
     who === 'tenant' && tenant
       ? t('account.tenantRoom', { room: tenant.roomNumber })

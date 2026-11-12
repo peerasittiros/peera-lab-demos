@@ -12,6 +12,7 @@ import {
 } from 'lucide-react';
 import Link from 'next/link';
 import { useState, type CSSProperties, type MouseEvent } from 'react';
+import { byStoredOrder } from '@/src/domain/order';
 import type { RoomStatus } from '@/src/domain/property';
 import { translator } from '@/src/i18n';
 
@@ -156,6 +157,7 @@ export function FloorPlan({
   hrefOf,
   onOpen,
   pickFloor = false,
+  floorOrder,
   floorHeading: FloorHeading = 'h2',
 }: {
   locale: Locale;
@@ -163,13 +165,18 @@ export function FloorPlan({
   hrefOf: (room: FloorPlanRoom) => string;
   onOpen?: (room: FloorPlanRoom) => void;
   pickFloor?: boolean;
+  /** The order the owner set in Settings. Floors it does not mention follow, lowest first. */
+  floorOrder?: number[];
   /** h2 on the room map; h3 where the plan sits under its own h2 (the overview). */
   floorHeading?: 'h2' | 'h3';
 }) {
   const { m, t, tp } = translator(locale);
-  const floors = [...new Set(rooms.map((room) => room.floor))].sort(
+  const present = [...new Set(rooms.map((room) => room.floor))].sort(
     (a, b) => a - b,
   );
+  const floors = floorOrder?.length
+    ? byStoredOrder(present, floorOrder.map(String), (floor) => floor)
+    : present;
   const [picked, setPicked] = useState<number | null>(null);
   const current = floors.includes(picked ?? NaN) ? picked : floors[0];
   return (

@@ -8,6 +8,7 @@ import { useCallback, useRef, useState } from 'react';
 import { useStore } from '@/src/client-store/hooks';
 import { roomMap } from '@/src/client-store/selectors/property';
 import { dashboard } from '@/src/client-store/selectors/reports';
+import { floorOrder } from '@/src/client-store/selectors/settings';
 import type { StoreState } from '@/src/client-store/store';
 import { translator, formatPeriod } from '@/src/i18n';
 import { PageHeader } from '@/src/components/PageHeader';
@@ -64,6 +65,11 @@ function DashboardBody({ locale }: { locale: Locale }) {
     [building],
   );
   const rooms = useStore(selectRooms);
+  const selectFloors = useCallback(
+    (s: StoreState) => (building ? floorOrder(s.data, building.id) : []),
+    [building],
+  );
+  const floors = useStore(selectFloors);
   const [openRoom, setOpenRoom] = useState<string | null>(null);
   const opener = useRef<HTMLElement | null>(null);
   if (!data) return null;
@@ -256,6 +262,7 @@ function DashboardBody({ locale }: { locale: Locale }) {
           <FloorPlan
             locale={locale}
             rooms={rooms}
+            floorOrder={floors}
             pickFloor
             floorHeading="h3"
             hrefOf={(room) => `/${locale}/owner/rooms/${room.roomId}`}
@@ -392,7 +399,9 @@ function DashboardBody({ locale }: { locale: Locale }) {
               className="flex flex-col gap-0.5 border-b border-line py-2 last:border-b-0 md:flex-row md:items-baseline md:justify-between md:gap-4"
             >
               <div className="flex items-baseline justify-between gap-4">
-                <span className="tabular-nums text-ink-muted">{formatPeriod(r.period, locale)}</span>
+                <span className="tabular-nums text-ink-muted">
+                  {formatPeriod(r.period, locale)}
+                </span>
                 <span className="tabular-nums text-ink">
                   {formatMoney(r.billedSatang, locale)}
                 </span>

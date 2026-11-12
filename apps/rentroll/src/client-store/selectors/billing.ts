@@ -5,6 +5,7 @@ import type { BillingRoom } from '@/src/domain/billing-run';
 import type { LinkedInvoice } from '@/src/domain/invoice-link';
 import type { Op } from '../ops';
 import type { Data } from '../schema';
+import { settingsView } from './settings';
 import { tenantContract } from './tenant';
 import { meterRound } from './meters';
 
@@ -197,6 +198,7 @@ export function invoiceDocument(
     );
   const renter = primary && data.renter.find((r) => r.id === primary.renterId);
   if (!building) return null;
+  const notes = settingsView(data);
   return {
     number: invoice.number,
     status: invoice.status,
@@ -212,6 +214,8 @@ export function invoiceDocument(
     bankAccountMasked: building.bankAccountMasked,
     roomNumber: room?.number ?? '',
     renterName: renter ? renter.name : null,
+    noteTh: notes.noteTh,
+    noteEn: notes.noteEn,
     lines: data.invoice_line
       .filter((l) => l.invoiceId === invoice.id)
       .map((l) => ({

@@ -1,10 +1,8 @@
 import { isLocale } from '@peera/i18n';
 import { notFound } from 'next/navigation';
-import { PageHeader } from '@/src/components/PageHeader';
-import { SectionIndex } from '@/src/components/nav/SectionIndex';
-import { translator } from '@/src/i18n';
+import { SettingsIndex } from '@/src/components/settings/SettingsIndex';
 
-/** Settings: the owner’s setup pages, one row each (ux-v2/rentroll.md › Shell). */
+/** Settings: every page in its group, with a line on what it holds (ux-v2/rentroll.md › Settings). */
 export default async function Page({
   params,
 }: {
@@ -12,15 +10,5 @@ export default async function Page({
 }) {
   const { locale } = await params;
   if (!isLocale(locale)) notFound();
-  const { m } = translator(locale);
-  return (
-    <>
-      <PageHeader
-        locale={locale}
-        title={m.nav.settings}
-        description={m.settings.intro}
-      />
-      <SectionIndex locale={locale} section="settings" />
-    </>
-  );
+  return <SettingsIndex locale={locale} />;
 }

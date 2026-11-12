@@ -15,7 +15,12 @@ import {
   roomMap,
   roomTypeComparison,
 } from '@/src/client-store/selectors/property';
+import {
+  floorOrder,
+  orderedRoomTypes,
+} from '@/src/client-store/selectors/settings';
 import type { StoreState } from '@/src/client-store/store';
+import { byStoredOrder } from '@/src/domain/order';
 import { translator, type Messages, formatDay, formatPeriod } from '@/src/i18n';
 import { PageHeader } from '@/src/components/PageHeader';
 import { FloorPlan } from '@/src/components/property/FloorPlan';
@@ -71,6 +76,11 @@ function RoomMapBody({ locale }: { locale: Locale }) {
     [building],
   );
   const rooms = useStore(select);
+  const selectFloors = useCallback(
+    (s: StoreState) => (building ? floorOrder(s.data, building.id) : []),
+    [building],
+  );
+  const floors = useStore(selectFloors);
   const shown = rooms.filter((r) => {
     if (filter === 'all') return true;
     if (filter === 'notice') return r.notice;
@@ -124,6 +134,7 @@ function RoomMapBody({ locale }: { locale: Locale }) {
       <FloorPlan
         locale={locale}
         rooms={shown}
+        floorOrder={floors}
         hrefOf={(room) => `/${locale}/owner/rooms/${room.roomId}`}
       />
     </>
@@ -299,10 +310,15 @@ function RoomTypesBody({ locale }: { locale: Locale }) {
   const buildings = useStore(buildingsView);
   const building = buildings[0];
   const select = useCallback(
-    (s: StoreState) =>
-      building && s.snapshotDate
-        ? roomTypeComparison(s.data, building.id, s.snapshotDate)
-        : [],
+    (s: StoreState) => {
+      if (!building || !s.snapshotDate) return [];
+      const rows = roomTypeComparison(s.data, building.id, s.snapshotDate);
+      return byStoredOrder(
+        rows,
+        orderedRoomTypes(s.data, building.id).map((type) => type.id),
+        (row) => row.id,
+      );
+    },
     [building],
   );
   const types = useStore(select);

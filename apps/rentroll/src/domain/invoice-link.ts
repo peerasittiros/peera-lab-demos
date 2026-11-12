@@ -27,6 +27,9 @@ export type LinkedInvoice = {
   bankAccountMasked: string | null;
   roomNumber: string;
   renterName: string | null;
+  /** The note settings print at the foot of every invoice. Optional: links made before notes existed have none. */
+  noteTh?: string | null;
+  noteEn?: string | null;
   lines: LinkedLine[];
 };
 

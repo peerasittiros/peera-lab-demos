@@ -15,7 +15,7 @@ export default async function Layout({
   if (!isLocale(locale)) notFound();
   return (
     <>
-      <SectionBack locale={locale} section="reports" />
+      <SectionBack locale={locale} />
       {children}
     </>
   );

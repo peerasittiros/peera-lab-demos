@@ -20,7 +20,7 @@ export default async function Page({
         title={m.nav.reports}
         description={m.reports.intro}
       />
-      <SectionIndex locale={locale} section="reports" />
+      <SectionIndex locale={locale} />
     </>
   );
 }

@@ -45,6 +45,7 @@ export type Store = {
 };
 
 export const TABLE_NAMES = [
+  'setting',
   'building',
   'rate_plan',
   'room_type',

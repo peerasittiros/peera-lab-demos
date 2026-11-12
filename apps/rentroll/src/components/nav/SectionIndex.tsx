@@ -3,13 +3,10 @@
 import type { Locale } from '@peera/i18n';
 import { cn, focusRing, ts } from '@peera/ui';
 import {
-  Building2,
   ChevronLeft,
   ChevronRight,
   Droplets,
   FileText,
-  Layers,
-  Percent,
   PiggyBank,
   type LucideIcon,
 } from 'lucide-react';
@@ -20,54 +17,34 @@ import { translator } from '@/src/i18n';
 type Entry = { path: string; icon: LucideIcon; title: string; intro: string };
 
 /**
- * Reports and Settings are one sidebar entry each; their index lists the pages under them (one row per page, with what
- * it holds), and each page under them starts with a way back.
+ * Reports is one sidebar entry; its index lists the reports (one row per report, with what it holds), and each report
+ * starts with a way back. Settings has its own grouped pages under `components/settings`.
  */
-function entries(locale: Locale, section: 'reports' | 'settings'): Entry[] {
+function entries(locale: Locale): Entry[] {
   const { m } = translator(locale);
-  if (section === 'reports')
-    return [
-      {
-        path: '/owner/reports/rent-roll',
-        icon: FileText,
-        ...m.reports.rentRoll,
-      },
-      {
-        path: '/owner/reports/utilities',
-        icon: Droplets,
-        ...m.reports.utilities,
-      },
-      {
-        path: '/owner/reports/deposits',
-        icon: PiggyBank,
-        ...m.reports.deposits,
-      },
-    ];
   return [
     {
-      path: '/owner/settings/buildings',
-      icon: Building2,
-      ...m.property.buildings,
+      path: '/owner/reports/rent-roll',
+      icon: FileText,
+      ...m.reports.rentRoll,
     },
     {
-      path: '/owner/settings/room-types',
-      icon: Layers,
-      ...m.property.roomTypes,
+      path: '/owner/reports/utilities',
+      icon: Droplets,
+      ...m.reports.utilities,
     },
-    { path: '/owner/settings/rates', icon: Percent, ...m.property.rates },
+    {
+      path: '/owner/reports/deposits',
+      icon: PiggyBank,
+      ...m.reports.deposits,
+    },
   ];
 }
 
-export function SectionIndex({
-  locale,
-  section,
-}: {
-  locale: Locale;
-  section: 'reports' | 'settings';
-}) {
+export function SectionIndex({ locale }: { locale: Locale }) {
   return (
     <ul className="grid max-w-[40rem] overflow-hidden rounded-md border border-line bg-surface-raised">
-      {entries(locale, section).map(({ path, icon: Icon, title, intro }) => (
+      {entries(locale).map(({ path, icon: Icon, title, intro }) => (
         <li key={path} className="border-b border-line last:border-b-0">
           <Link
             prefetch={false}
@@ -101,17 +78,11 @@ export function SectionIndex({
   );
 }
 
-/** "‹ Reports" or "‹ Settings" above a page under it; nothing on the index itself. */
-export function SectionBack({
-  locale,
-  section,
-}: {
-  locale: Locale;
-  section: 'reports' | 'settings';
-}) {
+/** "‹ Reports" above a report; nothing on the index itself. */
+export function SectionBack({ locale }: { locale: Locale }) {
   const { m } = translator(locale);
   const pathname = usePathname();
-  const index = `/${locale}/owner/${section}`;
+  const index = `/${locale}/owner/reports`;
   if (pathname === index) return null;
   return (
     <Link
@@ -124,7 +95,7 @@ export function SectionBack({
       )}
     >
       <ChevronLeft aria-hidden size={18} strokeWidth={1.75} />
-      {m.nav[section]}
+      {m.nav.reports}
     </Link>
   );
 }

@@ -51,13 +51,23 @@ export function BuildingBadge({
       className={cn('flex min-w-0 items-center gap-3', className)}
       title={compact ? name : undefined}
     >
-      <span
-        role="img"
-        aria-label={`${m.app.placeLogo} ${name}`}
-        className="flex size-10 shrink-0 items-center justify-center rounded-md bg-product-accent text-product-on-accent shadow-sm"
-      >
-        <Building2 aria-hidden size={22} strokeWidth={1.75} />
-      </span>
+      {place.logoUrl ? (
+        <img
+          src={place.logoUrl}
+          alt={`${m.app.placeLogo} ${name}`}
+          width={40}
+          height={40}
+          className="size-10 shrink-0 rounded-md object-cover shadow-sm"
+        />
+      ) : (
+        <span
+          role="img"
+          aria-label={`${m.app.placeLogo} ${name}`}
+          className="flex size-10 shrink-0 items-center justify-center rounded-md bg-product-accent text-product-on-accent shadow-sm"
+        >
+          <Building2 aria-hidden size={22} strokeWidth={1.75} />
+        </span>
+      )}
       {compact ? null : (
         <span className={cn('grid min-w-0', railBelowLg && 'max-lg:hidden')}>
           <span className={cn(ts('ui', locale), 'font-semibold text-ink')}>

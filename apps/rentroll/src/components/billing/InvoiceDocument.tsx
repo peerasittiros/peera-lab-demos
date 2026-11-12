@@ -26,6 +26,8 @@ export type DocumentData = {
   bankAccountMasked: string | null;
   roomNumber: string;
   renterName: string | null;
+  noteTh?: string | null;
+  noteEn?: string | null;
   lines: DocumentLine[];
 };
 
@@ -67,6 +69,8 @@ export function InvoiceDocument({
   const amount = formatMoney(invoice.totalSatang, locale);
   const credited = invoice.creditedSatang ?? 0;
   const balance = invoice.totalSatang - invoice.paidSatang - credited;
+  // The note the owner saved in Settings, in the visitor's language.
+  const note = (locale === 'th' ? invoice.noteTh : invoice.noteEn) ?? null;
   // A5 is short: a denser layout keeps the invoice on one page.
   const dense = size === 'a5';
 
@@ -199,6 +203,16 @@ export function InvoiceDocument({
             <span className="text-sm text-ink-muted">{p.qrNote}</span>
           </div>
         </section>
+
+        {note ? (
+          <footer className="border-t border-line pt-3 text-ink-muted">
+            {bilingual && invoice.noteTh && invoice.noteEn ? (
+              both(invoice.noteTh, invoice.noteEn)
+            ) : (
+              <span lang={locale}>{note}</span>
+            )}
+          </footer>
+        ) : null}
       </article>
     </>
   );

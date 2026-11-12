@@ -306,9 +306,15 @@ const buildingInput = z.object({
   promptpayId: z.string().trim().min(1).max(40),
   billingDay: z.number().int().min(1).max(28),
   dueDay: z.number().int().min(1).max(28),
+  /** Omitted keeps the address on file; `null` clears it. */
+  addressTh: z.string().trim().max(200).nullable().optional(),
+  addressEn: z.string().trim().max(200).nullable().optional(),
 });
 
-/** Edits a building's names, PromptPay ID and billing days (SPEC §4 O5). Owner only. */
+/**
+ * Edits a building's names, address, PromptPay ID and billing days (SPEC §4 O5). The address is edited on the Building
+ * settings page; the billing days on the Billing page, so each form sends only its own fields.
+ */
 export function actUpdateBuilding(
   ctx: CommandContext,
   input: z.input<typeof buildingInput>,
@@ -316,18 +322,26 @@ export function actUpdateBuilding(
   if (!isOwner(ctx)) return fail('errors.forbidden');
   const parsed = buildingInput.safeParse(input);
   if (!parsed.success) return fail('property.errors.invalid');
-  if (
-    !ctx.store
-      .getState()
-      .data.building.some((b) => b.id === parsed.data.buildingId)
-  )
-    return fail('property.errors.notFound');
+  const building = ctx.store
+    .getState()
+    .data.building.find((b) => b.id === parsed.data.buildingId);
+  if (!building) return fail('property.errors.notFound');
   const ok = ctx.store.dispatch({
     id: newId(),
     at: ctx.now().toISOString(),
     role: ctx.role,
     kind: 'building.update',
-    payload: parsed.data,
+    payload: {
+      ...parsed.data,
+      addressTh:
+        parsed.data.addressTh === undefined
+          ? building.addressTh
+          : parsed.data.addressTh,
+      addressEn:
+        parsed.data.addressEn === undefined
+          ? building.addressEn
+          : parsed.data.addressEn,
+    },
   });
   return ok
     ? { ok: true, value: { buildingId: parsed.data.buildingId } }

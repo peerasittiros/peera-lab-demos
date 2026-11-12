@@ -10,6 +10,7 @@ import {
   tenantContract,
 } from '@/src/client-store/selectors/tenant';
 import { loadReviewQueue } from '@/src/client-store/selectors/payments';
+import { settingsView } from '@/src/client-store/selectors/settings';
 import type { StoreState } from '@/src/client-store/store';
 
 /**
@@ -42,7 +43,8 @@ export const buildingView = (s: StoreState) => s.data.building[0] ?? null;
 
 /**
  * The property the badge names: the buildings' shared name (the sample calls them "… อาคาร A" / "…, Building A", so
- * that suffix is dropped), with the Thai and English forms. Null until the snapshot has loaded.
+ * that suffix is dropped), with the Thai and English forms, and the logo saved in Settings. Null until the snapshot has
+ * loaded.
  */
 export const placeView = (s: StoreState) => {
   const first = s.data.building[0];
@@ -53,6 +55,7 @@ export const placeView = (s: StoreState) => {
   return {
     th: strip(first.nameTh),
     en: first.nameEn ? strip(first.nameEn) : null,
+    logoUrl: settingsView(s.data).logoUrl,
   };
 };
 

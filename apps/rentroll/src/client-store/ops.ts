@@ -282,17 +282,37 @@ export type ContractMoveOutOp = OpBase & {
   };
 };
 
-/** Edits a building's names, PromptPay ID and billing days. Bills already issued keep what they were issued with. */
+/** Edits a building's names, address, PromptPay ID and billing days. Bills already issued keep what they were issued with. */
 export type BuildingUpdateOp = OpBase & {
   kind: 'building.update';
   payload: {
     buildingId: string;
     nameTh: string;
     nameEn: string | null;
+    addressTh: string | null;
+    addressEn: string | null;
     promptpayId: string;
     billingDay: number;
     dueDay: number;
   };
+};
+
+/** A setting kept in this browser (`null` clears it): the logo, the phone, the invoice note, the display names. */
+export type SettingSetOp = OpBase & {
+  kind: 'setting.set';
+  payload: { key: string; value: string | null };
+};
+
+/** A room type's names, as the settings page saved them. Rents and terms are set with the seed. */
+export type RoomTypeUpdateOp = OpBase & {
+  kind: 'room_type.update';
+  payload: { roomTypeId: string; nameTh: string; nameEn: string | null };
+};
+
+/** Removes a room type that no room uses. */
+export type RoomTypeRemoveOp = OpBase & {
+  kind: 'room_type.remove';
+  payload: { roomTypeId: string };
 };
 
 /** A new rate plan from `validFrom`. Bills generated before that date keep the plan they were generated with. */
@@ -338,7 +358,10 @@ export type Op =
   | BuildingUpdateOp
   | RatePlanAddOp
   | CreditNoteIssueOp
-  | RoomUpdateOp;
+  | RoomUpdateOp
+  | SettingSetOp
+  | RoomTypeUpdateOp
+  | RoomTypeRemoveOp;
 
 /** Edits a room's number, floor, type, size and meter digit counts. The room keeps its building. */
 export type RoomUpdateOp = OpBase & {
@@ -477,6 +500,16 @@ export function canApply(data: Data, op: Op): boolean {
     }
     case 'contract.notice':
       return byId(data.contract, op.payload.contractId)?.status === 'active';
+    case 'setting.set':
+      // Settings belong to this browser alone: nothing in the snapshot can make one stale.
+      return op.payload.key !== '';
+    case 'room_type.update':
+      return Boolean(byId(data.room_type, op.payload.roomTypeId));
+    case 'room_type.remove':
+      return (
+        Boolean(byId(data.room_type, op.payload.roomTypeId)) &&
+        !data.room.some((r) => r.roomTypeId === op.payload.roomTypeId)
+      );
     case 'contract.movein': {
       const p = op.payload;
       const liveOnRoom = data.contract.some(
@@ -904,12 +937,36 @@ export function apply(data: Data, op: Op): Data {
       });
     }
 
+    case 'setting.set': {
+      const { key, value } = op.payload;
+      const rest = data.setting.filter((row) => row.id !== key);
+      return replaceRows(
+        data,
+        'setting',
+        value === null
+          ? rest
+          : [...rest, { id: key, value, createdAt: op.at }],
+      );
+    }
+
+    case 'room_type.update':
+      return patchRow(data, 'room_type', op.payload.roomTypeId, {
+        nameTh: op.payload.nameTh,
+        nameEn: op.payload.nameEn,
+      });
+
+    case 'room_type.remove':
+      return replaceRows(
+        data,
+        'room_type',
+        data.room_type.filter((t) => t.id !== op.payload.roomTypeId),
+      );
+
     case 'contract.notice':
       return patchRow(data, 'contract', op.payload.contractId, {
         status: 'notice_given',
         noticeDate: op.payload.noticeDate,
       });
-
     case 'contract.movein': {
       const p = op.payload;
       let next = data;
@@ -1096,6 +1153,8 @@ export function apply(data: Data, op: Op): Data {
       return patchRow(data, 'building', p.buildingId, {
         nameTh: p.nameTh,
         nameEn: p.nameEn,
+        addressTh: p.addressTh,
+        addressEn: p.addressEn,
         promptpayId: p.promptpayId,
         billingDay: p.billingDay,
         dueDay: p.dueDay,

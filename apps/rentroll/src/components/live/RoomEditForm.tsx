@@ -6,16 +6,15 @@ import { useCallback, useState, type FormEvent } from 'react';
 import { useStore } from '@/src/client-store/hooks';
 import { actUpdateRoom } from '@/src/client-store/commands/property';
 import { useRole } from '@/src/client-store/role';
+import { orderedRoomTypes } from '@/src/client-store/selectors/settings';
 import type { StoreState } from '@/src/client-store/store';
 import { translator } from '@/src/i18n';
 import { commandContext, messageFor } from './OwnerEdits';
 
-/** The room and the types its building offers, read from the store. */
+/** The room and the types its building offers, in the order Settings › Room types sets. */
 function viewOf(s: StoreState, roomId: string) {
   const room = s.data.room.find((r) => r.id === roomId) ?? null;
-  const types = room
-    ? s.data.room_type.filter((t) => t.buildingId === room.buildingId)
-    : [];
+  const types = room ? orderedRoomTypes(s.data, room.buildingId) : [];
   return { room, types };
 }
 

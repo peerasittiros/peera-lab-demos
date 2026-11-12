@@ -824,6 +824,7 @@ export const en = defineMessages()({
       ratePlanDuplicate:
         'A rate plan already starts on this date. Pick another date.',
       roomDuplicate: 'Another room in this building has this number.',
+      roomTypeInUse: 'Cannot delete: some rooms still use this type.',
       pastDate: 'A new rate plan has to start today or later.',
       invalid: 'Check the highlighted fields.',
       saveFailed: 'Could not save. Your changes are not lost; try again.',
@@ -931,6 +932,90 @@ export const en = defineMessages()({
   settings: {
     intro:
       'The buildings, the room types and the rates that bills are worked out from.',
+    title: 'Settings',
+    subtitle: 'Buildings, rooms, rates and billing for this property.',
+    back: 'Settings',
+    propertyTitle: 'Property details',
+    floorsTitle: 'Floor order on the map',
+    sections: {
+      building: 'Building',
+      rooms: 'Rooms and rates',
+      billing: 'Billing',
+      people: 'People',
+      data: 'Data',
+    },
+    pages: {
+      building: {
+        title: 'Building details',
+        body: 'Name, address, phone and logo',
+      },
+      buildings: {
+        title: 'Buildings and floors',
+        body: 'Building names and floor order on the room map',
+      },
+      roomTypes: {
+        title: 'Room types',
+        body: 'Names, order, and deleting a type no room uses',
+      },
+      rates: {
+        title: 'Rates',
+        body: 'Electricity, water, common area and late fees',
+      },
+      billing: {
+        title: 'Billing',
+        body: 'Bill day, due day and the note at the foot of an invoice',
+      },
+      people: { title: 'People', body: 'The names shown in the account menu' },
+      data: { title: 'Data', body: 'Export CSV or start the demo over' },
+    },
+    logo: 'Logo',
+    logoHint: 'A square image looks best. It is stored in this browser only.',
+    phone: 'Phone',
+    phoneHint: 'The number tenants can call when something is urgent.',
+    noteTh: 'Invoice note (Thai)',
+    noteEn: 'Invoice note (English)',
+    noteHint:
+      'Appears at the foot of every invoice, including ones already issued.',
+    ownerName: 'Owner name',
+    caretakerName: 'Caretaker name',
+    tenantName: 'Sample tenant name',
+    nameHint:
+      'Used in the account menu only. Names on contracts do not change.',
+    saveBuilding: 'Save building details',
+    saveBilling: 'Save billing',
+    savePeople: 'Save display names',
+    roomTypesHint:
+      'This order is used in the room type picker when a contract is made.',
+    inUse: { one: '{count} room uses this', other: '{count} rooms use this' },
+    unused: 'No room uses this type yet.',
+    roomTypeSaved: 'Room type name saved.',
+    removed: 'Removed.',
+    exportTitle: 'Export',
+    exportBody: 'CSV files that open in Excel with Thai text intact.',
+    exportRentRoll: 'Export the rent roll',
+    exportInvoices: 'Export invoices',
+    resetTitle: 'Start the demo over',
+    resetBody:
+      'Clears everything you changed in this browser, the logo included, and starts from the sample data again.',
+    moveUp: 'Move {name} up',
+    moveDown: 'Move {name} down',
+    moved: '{name} is now number {position}',
+    editName: 'Edit the name of {name}',
+    removeName: 'Remove {name}',
+    saved: 'Saved.',
+    errors: {
+      unknownKey: 'This page cannot save that value.',
+      tooLong: 'That text is too long. Try shortening it.',
+    },
+  },
+  image: {
+    choose: 'Choose an image',
+    replace: 'Replace image',
+    remove: 'Remove image',
+    preview: 'Selected image',
+    errorType: 'Choose an image file, such as JPG, PNG or WebP.',
+    errorSize: 'That image is too large. Choose one under 10 MB.',
+    errorRead: 'That image could not be read. Try a JPG or PNG.',
   },
   placeholder: {
     dashboard: 'Overview',
