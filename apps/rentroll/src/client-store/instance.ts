@@ -1,4 +1,5 @@
 import { bangkokDate } from '@/src/domain/dates';
+import { takeEarlySnapshot } from './early-snapshot';
 import { openPersistence } from './idb';
 import type { Snapshot } from './schema';
 import { createStore, type Store } from './store';
@@ -9,7 +10,10 @@ import { openSync } from './sync';
  * on the server (there it stays empty and the views show their loading state).
  */
 async function fetchSnapshot(): Promise<Snapshot> {
-  const response = await fetch('/api/demo/snapshot');
+  // The head script's request when it made one; a failed one falls back to a fresh fetch.
+  const early = await takeEarlySnapshot()?.catch(() => null);
+  const response =
+    early && early.ok ? early : await fetch('/api/demo/snapshot');
   if (!response.ok)
     throw new Error(`snapshot request failed: ${response.status}`);
   const snapshot = (await response.json()) as Snapshot;

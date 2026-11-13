@@ -23,7 +23,7 @@ const OPS_STORE = 'ops';
 const SNAPSHOT_KEY = 'current';
 /**
  * localStorage mirror of the stored snapshot's day, `YYYY-MM-DD`. The head script (`SnapshotPreload`) reads it
- * synchronously, before IndexedDB can answer, to skip preloading a snapshot this browser already has for today.
+ * synchronously, before IndexedDB can answer, to skip requesting a snapshot this browser already has for today.
  */
 export const SNAPSHOT_HINT_KEY = 'rentroll.snapshot';
 
@@ -32,7 +32,7 @@ function writeHint(day: string | null) {
     if (day === null) localStorage.removeItem(SNAPSHOT_HINT_KEY);
     else localStorage.setItem(SNAPSHOT_HINT_KEY, day);
   } catch {
-    // Storage blocked: the head script preloads every visit, which only costs a cached request.
+    // Storage blocked: the head script requests the snapshot every visit, which the store then reads.
   }
 }
 
@@ -121,7 +121,10 @@ export async function openPersistence(): Promise<Persistence> {
         const value = await request(
           tx.objectStore(SNAPSHOT_STORE).get(SNAPSHOT_KEY),
         );
-        return (value as Snapshot | undefined) ?? null;
+        const stored = (value as Snapshot | undefined) ?? null;
+        // Re-mirror the stored day, so a lost hint costs one early request, not one every visit.
+        writeHint(stored?.snapshotDate ?? null);
+        return stored;
       } catch (error) {
         logError('read snapshot', error);
         return null;
