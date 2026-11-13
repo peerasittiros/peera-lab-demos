@@ -64,9 +64,9 @@ export function BuildingEditForm({
     setEditing(true);
   };
 
-  const submit = (event: FormEvent<HTMLFormElement>) => {
+  const submit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
-    const result = actUpdateBuilding(commandContext(role), {
+    const result = await actUpdateBuilding(commandContext(role), {
       buildingId: building.id,
       nameTh,
       nameEn: nameEn.trim() || null,
@@ -197,9 +197,9 @@ export function RatePlanForm({
     setEditing(true);
   };
 
-  const submit = (event: FormEvent<HTMLFormElement>) => {
+  const submit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
-    const result = actAddRatePlan(commandContext(role), {
+    const result = await actAddRatePlan(commandContext(role), {
       buildingId,
       validFrom,
       elecRateSatang: toSatang(electricity),
@@ -313,9 +313,9 @@ export function CreditNoteForm({
   const [amount, setAmount] = useState('');
   const [reason, setReason] = useState('');
 
-  const submit = (event: FormEvent<HTMLFormElement>) => {
+  const submit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
-    const result = actIssueCreditNote(commandContext(role), {
+    const result = await actIssueCreditNote(commandContext(role), {
       invoiceId,
       amountSatang: toSatang(amount),
       reason: reason.trim(),

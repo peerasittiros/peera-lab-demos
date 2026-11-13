@@ -223,9 +223,9 @@ function InvoiceRow({
           <button
             type="button"
             disabled={busy}
-            onClick={() => {
+            onClick={async () => {
               setBusy(true);
-              const result = actVoidDraft(
+              const result = await actVoidDraft(
                 { store: getStore(), role, now: () => new Date() },
                 { invoiceId: inv.id },
               );

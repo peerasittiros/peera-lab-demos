@@ -101,12 +101,12 @@ function PropertyForm({ locale }: { locale: Locale }) {
   const [logo, setLogo] = useState(values.logoUrl);
   const [phone, setPhone] = useState(values.phone ?? '');
 
-  const submit = (event: FormEvent<HTMLFormElement>) => {
+  const submit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     const ctx = commandContext(role);
     const results = [
-      actSaveSetting(ctx, { key: SETTING.logo, value: logo }),
-      actSaveSetting(ctx, {
+      await actSaveSetting(ctx, { key: SETTING.logo, value: logo }),
+      await actSaveSetting(ctx, {
         key: SETTING.phone,
         value: phone.trim() === '' ? null : phone,
       }),
@@ -175,9 +175,9 @@ function BuildingForm({
   const [addressEn, setAddressEn] = useState(building.addressEn ?? '');
   const [promptpayId, setPromptpayId] = useState(building.promptpayId);
 
-  const submit = (event: FormEvent<HTMLFormElement>) => {
+  const submit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
-    const result = actUpdateBuilding(commandContext(role), {
+    const result = await actUpdateBuilding(commandContext(role), {
       buildingId: building.id,
       nameTh,
       nameEn: nameEn.trim() === '' ? null : nameEn,

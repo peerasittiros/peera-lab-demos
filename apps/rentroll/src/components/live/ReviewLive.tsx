@@ -194,10 +194,10 @@ function ReviewCard({
   const check = slipCheck(item.amountSatang, item.open);
   const CheckIcon = check.kind === 'match' ? CheckCircle2 : AlertTriangle;
 
-  const approve = () => {
+  const approve = async () => {
     if (decided) return;
     setBusy('approve');
-    const result = actApprovePayment(context(), {
+    const result = await actApprovePayment(context(), {
       paymentId: item.id,
       amountSatang: toSatang(approveBaht),
     });
@@ -212,9 +212,9 @@ function ReviewCard({
     );
   };
 
-  const ask = () => {
+  const ask = async () => {
     setBusy('reject');
-    const result = actRejectPayment(context(), {
+    const result = await actRejectPayment(context(), {
       paymentId: item.id,
       reason: reason.trim(),
     });
@@ -440,10 +440,10 @@ function ManualPaymentForm({
 
   if (contracts.length === 0) return <p className="text-ink-muted">{p.none}</p>;
 
-  const submit = (event: FormEvent<HTMLFormElement>) => {
+  const submit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     const data = new FormData(event.currentTarget);
-    const result = actRecordManualPayment(context(), {
+    const result = await actRecordManualPayment(context(), {
       contractId,
       amountSatang: toSatang(String(data.get('amount') ?? '')),
       method,

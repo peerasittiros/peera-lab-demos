@@ -1,4 +1,3 @@
-import { z } from 'zod';
 import { newId } from '../ids';
 import type { Op, SlipKind } from '../ops';
 import type { Role } from '../schema';
@@ -30,23 +29,8 @@ const fail = (error: string): { ok: false; error: string } => ({
 
 const OPEN_STATUSES = ['sent', 'partially_paid'];
 
-const slipInput = z.object({
-  invoiceId: z.uuid(),
-  amountSatang: z.number().int().min(1),
-  slipUrl: z.enum(['sample', 'uploaded']).nullable(),
-});
-const decisionInput = z.object({ paymentId: z.uuid() });
-const approveInput = decisionInput.extend({
-  amountSatang: z.number().int().min(1).optional(),
-});
-const rejectInput = decisionInput.extend({
-  reason: z.string().trim().min(1).max(200),
-});
-const manualInput = z.object({
-  contractId: z.uuid(),
-  amountSatang: z.number().int().min(1),
-  method: z.enum(['cash', 'transfer']),
-});
+/** Zod and the schemas, loaded on the first command (see `../schemas.ts`). Every command module uses this one. */
+export const loadSchemas = () => import('../schemas');
 
 function stamp<K extends Op['kind']>(
   ctx: CommandContext,
@@ -63,12 +47,12 @@ function stamp<K extends Op['kind']>(
 }
 
 /** The tenant's slip: recorded for the owner's review. Nothing moves on the invoice until it is approved. */
-export function actSubmitSlip(
+export async function actSubmitSlip(
   ctx: CommandContext,
   input: { invoiceId: string; amountSatang: number; slipUrl: SlipKind },
-): CommandResult<{ paymentId: string }> {
+): Promise<CommandResult<{ paymentId: string }>> {
   if (!PAYER_ROLES.includes(ctx.role)) return fail('errors.forbidden');
-  const parsed = slipInput.safeParse(input);
+  const parsed = (await loadSchemas()).slipInput.safeParse(input);
   if (!parsed.success) return fail('payments.errors.invalidAmount');
 
   const data = ctx.store.getState().data;
@@ -92,15 +76,17 @@ export function actSubmitSlip(
 }
 
 /** Approves a pending slip for `amount` (defaults to the slip amount) and issues the receipt. */
-export function actApprovePayment(
+export async function actApprovePayment(
   ctx: CommandContext,
   input: { paymentId: string; amountSatang?: number },
-): CommandResult<{
-  receiptNumber: string;
-  allocations: { invoiceId: string; amount: number }[];
-}> {
+): Promise<
+  CommandResult<{
+    receiptNumber: string;
+    allocations: { invoiceId: string; amount: number }[];
+  }>
+> {
   if (!OWNER_ROLES.includes(ctx.role)) return fail('errors.forbidden');
-  const parsed = approveInput.safeParse(input);
+  const parsed = (await loadSchemas()).approveInput.safeParse(input);
   if (!parsed.success) return fail('payments.errors.invalidAmount');
 
   const data = ctx.store.getState().data;
@@ -132,19 +118,21 @@ export function actApprovePayment(
 }
 
 /** Cash or transfer the owner records: approved at once and settled the same way as a slip. */
-export function actRecordManualPayment(
+export async function actRecordManualPayment(
   ctx: CommandContext,
   input: {
     contractId: string;
     amountSatang: number;
     method: 'cash' | 'transfer';
   },
-): CommandResult<{
-  paymentId: string;
-  receiptNumber: string;
-}> {
+): Promise<
+  CommandResult<{
+    paymentId: string;
+    receiptNumber: string;
+  }>
+> {
   if (!OWNER_ROLES.includes(ctx.role)) return fail('errors.forbidden');
-  const parsed = manualInput.safeParse(input);
+  const parsed = (await loadSchemas()).manualInput.safeParse(input);
   if (!parsed.success) return fail('payments.errors.invalidAmount');
 
   const data = ctx.store.getState().data;
@@ -177,12 +165,12 @@ export function actRecordManualPayment(
   };
 }
 
-export function actRejectPayment(
+export async function actRejectPayment(
   ctx: CommandContext,
   input: { paymentId: string; reason: string },
-): CommandResult<{ paymentId: string }> {
+): Promise<CommandResult<{ paymentId: string }>> {
   if (!OWNER_ROLES.includes(ctx.role)) return fail('errors.forbidden');
-  const parsed = rejectInput.safeParse(input);
+  const parsed = (await loadSchemas()).rejectInput.safeParse(input);
   if (!parsed.success) return fail('payments.errors.notFound');
 
   const payment = ctx.store

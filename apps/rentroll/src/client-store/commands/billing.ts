@@ -1,4 +1,3 @@
-import { z } from 'zod';
 import { addMonths, bangkokDate } from '@/src/domain/dates';
 import { balanceOf } from '../settlement';
 import { formatDocumentNumber, type YearStyle } from '@/src/domain/numbering';
@@ -7,7 +6,12 @@ import { labelOf, missingReadings, planRoom } from '@/src/domain/billing-run';
 import { newId } from '../ids';
 import { billingPlan, nextSequence } from '../selectors/billing';
 import type { LineRecord } from '../ops';
-import type { CommandContext, CommandResult } from './payments';
+import type { Inputs } from '../schemas';
+import {
+  loadSchemas,
+  type CommandContext,
+  type CommandResult,
+} from './payments';
 
 /**
  * Billing run commands (SPEC §4 O10, O11). Generate, adjust a draft's lines, send, and void a draft. The owner does all
@@ -21,10 +25,10 @@ const fail = (error: string): { ok: false; error: string } => ({
 const isOwner = (ctx: CommandContext) => ctx.role === 'owner';
 
 /** Generates the month's drafts for every room without one. Refused while a meter reading is missing and not estimated. */
-export function actGenerateBilling(
+export async function actGenerateBilling(
   ctx: CommandContext,
   input: { buildingId: string; period: string; estimateRoomIds: string[] },
-): CommandResult<{ created: number }> {
+): Promise<CommandResult<{ created: number }>> {
   if (!isOwner(ctx)) return fail('errors.forbidden');
   const data = ctx.store.getState().data;
   const today = bangkokDate(ctx.now());
@@ -125,30 +129,13 @@ export function actGenerateBilling(
     : fail('billing.errors.saveFailed');
 }
 
-const lineInput = z.object({
-  id: z.uuid().optional(),
-  kind: z.enum([
-    'rent',
-    'electricity',
-    'water',
-    'extra',
-    'one_off',
-    'late_fee',
-    'previous_balance',
-  ]),
-  labelTh: z.string().trim().min(1).max(120),
-  labelEn: z.string().trim().min(1).max(120),
-  amountSatang: z.number().int().min(0),
-  meta: z.record(z.string(), z.unknown()).default({}),
-});
-
 /** Replaces the lines of a draft (added, edited or removed). The totals are worked out from the lines. */
-export function actAdjustDraftLines(
+export async function actAdjustDraftLines(
   ctx: CommandContext,
-  input: { invoiceId: string; lines: z.input<typeof lineInput>[] },
-): CommandResult<{ totalSatang: number }> {
+  input: { invoiceId: string; lines: Inputs['line'][] },
+): Promise<CommandResult<{ totalSatang: number }>> {
   if (!isOwner(ctx)) return fail('errors.forbidden');
-  const parsed = z.array(lineInput).safeParse(input.lines);
+  const parsed = (await loadSchemas()).lineListInput.safeParse(input.lines);
   if (!parsed.success) return fail('billing.errors.saveFailed');
   const data = ctx.store.getState().data;
   const invoice = data.invoice.find((i) => i.id === input.invoiceId);
@@ -187,10 +174,10 @@ export function actAdjustDraftLines(
 }
 
 /** Sends the month's drafts of the building. They are immutable from here on. */
-export function actSendBilling(
+export async function actSendBilling(
   ctx: CommandContext,
   input: { buildingId: string; period: string },
-): CommandResult<{ sent: number }> {
+): Promise<CommandResult<{ sent: number }>> {
   if (!isOwner(ctx)) return fail('errors.forbidden');
   const data = ctx.store.getState().data;
   const roomsOfBuilding = new Set(
@@ -222,10 +209,11 @@ export function actSendBilling(
 }
 
 /** Voids a draft. Its number stays used, so the sequence has no gaps. A sent invoice cannot be voided. */
-export function actVoidDraft(
+/** Voids a draft. The number is never reused. */
+export async function actVoidDraft(
   ctx: CommandContext,
   input: { invoiceId: string },
-): CommandResult<{ number: string }> {
+): Promise<CommandResult<{ number: string }>> {
   if (!isOwner(ctx)) return fail('errors.forbidden');
   const invoice = ctx.store
     .getState()
@@ -244,22 +232,16 @@ export function actVoidDraft(
     : fail('billing.errors.saveFailed');
 }
 
-const creditNoteInput = z.object({
-  invoiceId: z.uuid(),
-  amountSatang: z.number().int().positive(),
-  reason: z.string().trim().min(1).max(200),
-});
-
 /**
  * Issues a credit note against a sent invoice (SPEC §4 O11). The invoice keeps its numbers and lines; the credit takes
  * money off what it still owes, and the note is numbered `CN-<invoice>-<n>`.
  */
-export function actIssueCreditNote(
+export async function actIssueCreditNote(
   ctx: CommandContext,
-  input: z.input<typeof creditNoteInput>,
-): CommandResult<{ number: string }> {
+  input: Inputs['creditNote'],
+): Promise<CommandResult<{ number: string }>> {
   if (!isOwner(ctx)) return fail('errors.forbidden');
-  const parsed = creditNoteInput.safeParse(input);
+  const parsed = (await loadSchemas()).creditNoteInput.safeParse(input);
   if (!parsed.success) return fail('billing.errors.creditInvalid');
   const data = ctx.store.getState().data;
   const invoice = data.invoice.find((i) => i.id === parsed.data.invoiceId);

@@ -121,9 +121,9 @@ function RenameForm({
   const [nameTh, setNameTh] = useState(building.nameTh);
   const [nameEn, setNameEn] = useState(building.nameEn ?? '');
 
-  const submit = (event: FormEvent<HTMLFormElement>) => {
+  const submit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
-    const result = actUpdateBuilding(commandContext(role), {
+    const result = await actUpdateBuilding(commandContext(role), {
       buildingId: building.id,
       nameTh,
       nameEn: nameEn.trim() === '' ? null : nameEn,
@@ -229,8 +229,8 @@ function FloorOrder({
   const floorName = (floor: number) =>
     t('property.rooms.floorTitle', { floor });
 
-  const move = (floor: number, direction: 'up' | 'down') => {
-    const result = actMoveFloor(commandContext(role), {
+  const move = async (floor: number, direction: 'up' | 'down') => {
+    const result = await actMoveFloor(commandContext(role), {
       buildingId: building.id,
       floor,
       direction,

@@ -56,7 +56,7 @@ describe('actUpdateRoom', () => {
   it('saves the room fields', async () => {
     const store = await readyStore();
     const { room, type } = roomCase(store);
-    const result = actUpdateRoom(ctx(store, 'owner'), {
+    const result = await actUpdateRoom(ctx(store, 'owner'), {
       ...base(room, type.id),
       number: 'Z-901',
       floor: 9,
@@ -76,11 +76,11 @@ describe('actUpdateRoom', () => {
   it('refuses a number another room in the building already uses', async () => {
     const store = await readyStore();
     const { room, type, other } = roomCase(store);
-    expect(actUpdateRoom(ctx(store, 'owner'), base(room, type.id)).ok).toBe(
-      true,
-    );
     expect(
-      actUpdateRoom(ctx(store, 'owner'), {
+      (await actUpdateRoom(ctx(store, 'owner'), base(room, type.id))).ok,
+    ).toBe(true);
+    expect(
+      await actUpdateRoom(ctx(store, 'owner'), {
         ...base(room, type.id),
         number: other.number,
       }),
@@ -91,15 +91,15 @@ describe('actUpdateRoom', () => {
     const store = await readyStore();
     const { room, foreignType } = roomCase(store);
     expect(
-      actUpdateRoom(ctx(store, 'owner'), base(room, foreignType.id)),
+      await actUpdateRoom(ctx(store, 'owner'), base(room, foreignType.id)),
     ).toEqual({ ok: false, error: 'property.errors.invalid' });
   });
 
   it('is owner only', async () => {
     const store = await readyStore();
     const { room, type } = roomCase(store);
-    expect(actUpdateRoom(ctx(store, 'caretaker'), base(room, type.id))).toEqual(
-      { ok: false, error: 'errors.forbidden' },
-    );
+    expect(
+      await actUpdateRoom(ctx(store, 'caretaker'), base(room, type.id)),
+    ).toEqual({ ok: false, error: 'errors.forbidden' });
   });
 });

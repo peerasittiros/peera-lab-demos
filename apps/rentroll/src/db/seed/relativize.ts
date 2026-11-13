@@ -64,9 +64,15 @@ function jsonSafe(row: SnapshotRow): SnapshotRow {
   return out;
 }
 
-/** Fields that only exist to drive the relative dates; the client never needs them. */
-const RELATIVE_ONLY = [
+/**
+ * Columns the browser never reads: the tenant, the row timestamp, and the relative-day inputs once the dates below are
+ * applied. The generator's rows already lack them; a row read from the database still carries `tenantId` and
+ * `createdAt`, so dropping them here keeps both sources the same and keeps the snapshot the browser parses and stores
+ * to what the views use (V8).
+ */
+const SERVER_ONLY = [
   'tenantId',
+  'createdAt',
   'daysAgo',
   'startDaysAgo',
   'endDaysAgo',
@@ -74,9 +80,9 @@ const RELATIVE_ONLY = [
   'minuteOfDay',
 ] as const;
 
-function withoutRelative(row: SnapshotRow): SnapshotRow {
+function forBrowser(row: SnapshotRow): SnapshotRow {
   const copy = { ...row };
-  for (const field of RELATIVE_ONLY) delete copy[field];
+  for (const field of SERVER_ONLY) delete copy[field];
   return copy;
 }
 
@@ -85,7 +91,7 @@ function relativizeRow(
   row: SnapshotRow,
   today: string,
 ): SnapshotRow {
-  const out = withoutRelative(row);
+  const out = forBrowser(row);
   const daysAgo = num(row, 'daysAgo');
   const minute = num(row, 'minuteOfDay');
   const dayOf = (ago: number) => daysAgoDate(today, ago);

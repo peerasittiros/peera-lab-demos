@@ -1,4 +1,3 @@
-import { z } from 'zod';
 import { bangkokDate, dayNumber, isoFromDayNumber } from '@/src/domain/dates';
 import { formatDocumentNumber, type YearStyle } from '@/src/domain/numbering';
 import { CHECKLIST_LABELS, moveInInvoice } from '@/src/domain/move';
@@ -7,7 +6,12 @@ import { newId } from '../ids';
 import { nextSequence } from '../selectors/billing';
 import { moveOutPreview, type MoveOutInput } from '../selectors/property';
 import type { ChecklistRecord, LineRecord } from '../ops';
-import type { CommandContext, CommandResult } from './payments';
+import type { Inputs } from '../schemas';
+import {
+  loadSchemas,
+  type CommandContext,
+  type CommandResult,
+} from './payments';
 
 /**
  * Move-in and move-out (SPEC §4 O7, O8). Each is one op: the renter, the contract, the starting or final meters, the
@@ -33,23 +37,7 @@ const SETTLEMENT_LABELS: Record<string, { th: string; en: string }> = {
   cleaning: { th: 'ค่าทำความสะอาด', en: 'Cleaning' },
 };
 
-const checklistInput = z.array(
-  z.object({
-    key: z.enum([
-      'walls',
-      'floor',
-      'door_lock',
-      'aircon',
-      'furniture',
-      'appliances',
-    ]),
-    status: z.enum(['ok', 'damaged']).nullable(),
-  }),
-);
-
-function checklistRecords(
-  items: z.infer<typeof checklistInput>,
-): ChecklistRecord[] {
+function checklistRecords(items: Inputs['checklist']): ChecklistRecord[] {
   return items.map((item) => ({
     key: item.key,
     labelTh: CHECKLIST_LABELS[item.key].th,
@@ -58,35 +46,15 @@ function checklistRecords(
   }));
 }
 
-const moveInInput = z.object({
-  roomId: z.uuid(),
-  renter: z.discriminatedUnion('mode', [
-    z.object({
-      mode: z.literal('new'),
-      name: z.string().trim().min(1).max(120),
-      phone: z.string().trim().max(40).nullable(),
-    }),
-    z.object({ mode: z.literal('existing'), renterId: z.uuid() }),
-  ]),
-  startDate: z.iso.date(),
-  monthlyRentSatang: z.number().int().min(0),
-  depositSatang: z.number().int().min(0),
-  advanceMonths: z.number().int().min(0).max(12),
-  occupants: z.number().int().min(1).max(20),
-  parkingSatang: z.number().int().min(0),
-  internetSatang: z.number().int().min(0),
-  elecReading: z.number().int().min(0),
-  waterReading: z.number().int().min(0),
-  checklist: checklistInput,
-});
-
 /** Move-in: the room must be vacant today. Returns the contract and the first invoice's number. */
-export function actMoveIn(
+export async function actMoveIn(
   ctx: CommandContext,
-  input: z.input<typeof moveInInput>,
-): CommandResult<{ contractId: string; invoiceNumber: string; total: number }> {
+  input: Inputs['moveIn'],
+): Promise<
+  CommandResult<{ contractId: string; invoiceNumber: string; total: number }>
+> {
   if (!isOwner(ctx)) return fail('errors.forbidden');
-  const parsed = moveInInput.safeParse(input);
+  const parsed = (await loadSchemas()).moveInInput.safeParse(input);
   if (!parsed.success) return fail('property.errors.invalid');
   const p = parsed.data;
   const data = ctx.store.getState().data;
@@ -201,25 +169,13 @@ export function actMoveIn(
     : fail('contracts.errors.saveFailed');
 }
 
-const moveOutInput = z.object({
-  contractId: z.uuid(),
-  moveOutDate: z.iso.date(),
-  elecReading: z.number().int().min(0),
-  waterReading: z.number().int().min(0),
-  elecRollover: z.boolean(),
-  waterRollover: z.boolean(),
-  damages: z.number().int().min(0),
-  cleaningFee: z.number().int().min(0),
-  checklist: checklistInput,
-});
-
 /** Move-out: the settlement is worked out from the readings and the deposit, then committed in one op. */
-export function actMoveOut(
+export async function actMoveOut(
   ctx: CommandContext,
-  input: z.input<typeof moveOutInput>,
-): CommandResult<{ refund: number }> {
+  input: Inputs['moveOut'],
+): Promise<CommandResult<{ refund: number }>> {
   if (!isOwner(ctx)) return fail('errors.forbidden');
-  const parsed = moveOutInput.safeParse(input);
+  const parsed = (await loadSchemas()).moveOutInput.safeParse(input);
   if (!parsed.success) return fail('contracts.errors.meterInvalid');
   const data = ctx.store.getState().data;
   const preview = moveOutPreview(data, parsed.data as MoveOutInput);

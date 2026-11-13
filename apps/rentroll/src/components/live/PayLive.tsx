@@ -118,7 +118,7 @@ function SlipForm({
     );
     const kind: SlipKind = file ? 'uploaded' : slip;
     setSaving(true);
-    const result = actSubmitSlip(
+    const result = await actSubmitSlip(
       { store: getStore(), role, now: () => new Date() },
       { invoiceId, amountSatang, slipUrl: kind },
     );

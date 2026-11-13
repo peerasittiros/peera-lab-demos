@@ -113,8 +113,8 @@ function RepairsBoardBody({ locale }: { locale: Locale }) {
                     aria-label={tr('ownerRepairs.statusFor', {
                       room: t.roomNumber,
                     })}
-                    onValueChange={(value) => {
-                      const result = actMoveRepair(contextOf(role), {
+                    onValueChange={async (value) => {
+                      const result = await actMoveRepair(contextOf(role), {
                         ticketId: t.id,
                         status: value as RepairStatus,
                       });
@@ -171,11 +171,11 @@ function TicketPanel({
   const [note, setNote] = useState('');
   if (!ticket) return null;
 
-  const save = (event: FormEvent<HTMLFormElement>) => {
+  const save = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     const costSatang =
       cost.trim() === '' ? null : Math.round(Number(cost) * 100);
-    const result = actUpdateRepair(contextOf(role), {
+    const result = await actUpdateRepair(contextOf(role), {
       ticketId,
       assignee: assignee.trim() === '' ? null : assignee.trim(),
       scheduledAt: scheduled === '' ? null : new Date(scheduled).toISOString(),
@@ -185,8 +185,11 @@ function TicketPanel({
     toast({ title: result.ok ? p.saved : errorText(m, result.error) });
   };
 
-  const send = () => {
-    const result = actAddRepairNote(contextOf(role), { ticketId, body: note });
+  const send = async () => {
+    const result = await actAddRepairNote(contextOf(role), {
+      ticketId,
+      body: note,
+    });
     if (result.ok) setNote('');
     toast({ title: result.ok ? p.noted : errorText(m, result.error) });
   };
@@ -369,9 +372,9 @@ function RepairNewBody({ locale }: { locale: Locale }) {
   if (!room) return <p className="text-ink-muted">{m.tenant.home.none}</p>;
   if (sent) return <p className="text-ink">{p.sent}</p>;
 
-  const submit = (event: FormEvent<HTMLFormElement>) => {
+  const submit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
-    const result = actCreateRepair(contextOf(role), {
+    const result = await actCreateRepair(contextOf(role), {
       roomId: room.roomId,
       category,
       description,

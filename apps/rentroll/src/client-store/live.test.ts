@@ -49,7 +49,7 @@ describe('owner manual payment (payment.record)', () => {
     const store = await readyStore();
     const invoice = sentInvoice(store);
     const owed = owedOn(store.getState().data, invoice.contractId);
-    const result = actRecordManualPayment(ctx(store, 'owner'), {
+    const result = await actRecordManualPayment(ctx(store, 'owner'), {
       contractId: invoice.contractId,
       amountSatang: owed,
       method: 'transfer',
@@ -73,14 +73,14 @@ describe('owner manual payment (payment.record)', () => {
     const invoice = sentInvoice(store);
     const owed = owedOn(store.getState().data, invoice.contractId);
     expect(
-      actRecordManualPayment(ctx(store, 'tenant'), {
+      await actRecordManualPayment(ctx(store, 'tenant'), {
         contractId: invoice.contractId,
         amountSatang: 1,
         method: 'cash',
       }),
     ).toEqual({ ok: false, error: 'errors.forbidden' });
     expect(
-      actRecordManualPayment(ctx(store, 'owner'), {
+      await actRecordManualPayment(ctx(store, 'owner'), {
         contractId: invoice.contractId,
         amountSatang: owed + 1,
         method: 'cash',
@@ -92,7 +92,7 @@ describe('owner manual payment (payment.record)', () => {
     const store = await readyStore();
     const invoice = sentInvoice(store);
     const owed = owedOn(store.getState().data, invoice.contractId);
-    const first = actRecordManualPayment(ctx(store, 'owner'), {
+    const first = await actRecordManualPayment(ctx(store, 'owner'), {
       contractId: invoice.contractId,
       amountSatang: owed,
       method: 'cash',
@@ -103,7 +103,7 @@ describe('owner manual payment (payment.record)', () => {
         (i) => i.status === 'sent' && i.contractId !== invoice.contractId,
       );
     if (!sameBuildingOther) return;
-    const second = actRecordManualPayment(ctx(store, 'owner'), {
+    const second = await actRecordManualPayment(ctx(store, 'owner'), {
       contractId: sameBuildingOther.contractId,
       amountSatang: owedOn(store.getState().data, sameBuildingOther.contractId),
       method: 'cash',
@@ -115,7 +115,7 @@ describe('owner manual payment (payment.record)', () => {
     const store = await readyStore();
     const invoice = sentInvoice(store);
     const owed = owedOn(store.getState().data, invoice.contractId);
-    const result = actRecordManualPayment(ctx(store, 'owner'), {
+    const result = await actRecordManualPayment(ctx(store, 'owner'), {
       contractId: invoice.contractId,
       amountSatang: owed,
       method: 'cash',
@@ -134,7 +134,7 @@ describe('the live loop (SPEC §4 steps 1 and 2)', () => {
       .getState()
       .data.invoice.find((i) => i.status === 'sent' && i.contractId === mine)!;
     const owed = owedOn(store.getState().data, invoice.contractId);
-    const slip = actSubmitSlip(ctx(store, 'tenant'), {
+    const slip = await actSubmitSlip(ctx(store, 'tenant'), {
       invoiceId: invoice.id,
       amountSatang: owed,
       slipUrl: 'sample',
@@ -145,7 +145,7 @@ describe('the live loop (SPEC §4 steps 1 and 2)', () => {
       kind: 'slip.submitted',
     });
 
-    const approved = actApprovePayment(ctx(store, 'owner'), {
+    const approved = await actApprovePayment(ctx(store, 'owner'), {
       paymentId: slip.value.paymentId,
     });
     if (!approved.ok) throw new Error('approve failed');
@@ -170,13 +170,13 @@ describe('the live loop (SPEC §4 steps 1 and 2)', () => {
     const store = await readyStore();
     const invoice = sentInvoice(store);
     const before = owedOn(store.getState().data, invoice.contractId);
-    const slip = actSubmitSlip(ctx(store, 'tenant'), {
+    const slip = await actSubmitSlip(ctx(store, 'tenant'), {
       invoiceId: invoice.id,
       amountSatang: 100,
       slipUrl: null,
     });
     if (!slip.ok) throw new Error('slip failed');
-    actRejectPayment(ctx(store, 'owner'), {
+    await actRejectPayment(ctx(store, 'owner'), {
       paymentId: slip.value.paymentId,
       reason: 'unclear',
     });

@@ -1,4 +1,3 @@
-import { z } from 'zod';
 import { formatOrder, moved, parseOrder } from '@/src/domain/order';
 import { newId } from '../ids';
 import { floorOrder, roomTypeOrderValue } from '../selectors/settings';
@@ -8,7 +7,12 @@ import {
   maxLengthOf,
   roomTypesKey,
 } from '../setting-keys';
-import type { CommandContext, CommandResult } from './payments';
+import type { Inputs } from '../schemas';
+import {
+  loadSchemas,
+  type CommandContext,
+  type CommandResult,
+} from './payments';
 
 /**
  * Settings commands (ux-v2/rentroll.md › Settings): the details kept in this browser, and the names and order of the
@@ -21,10 +25,10 @@ const fail = (error: string): { ok: false; error: string } => ({
 });
 
 /** Saves one browser setting, or clears it with `null`. */
-export function actSaveSetting(
+export async function actSaveSetting(
   ctx: CommandContext,
   input: { key: string; value: string | null },
-): CommandResult<{ key: string }> {
+): Promise<CommandResult<{ key: string }>> {
   if (ctx.role !== 'owner') return fail('errors.forbidden');
   if (!isSettingKey(input.key)) return fail('settings.errors.unknownKey');
   const value = input.value === null ? '' : input.value.trim();
@@ -37,22 +41,18 @@ export function actSaveSetting(
     kind: 'setting.set',
     payload: { key: input.key, value: value === '' ? null : value },
   });
-  return ok ? { ok: true, value: { key: input.key } } : fail('errors.unexpected');
+  return ok
+    ? { ok: true, value: { key: input.key } }
+    : fail('errors.unexpected');
 }
 
-const roomTypeInput = z.object({
-  roomTypeId: z.uuid(),
-  nameTh: z.string().trim().min(1).max(60),
-  nameEn: z.string().trim().max(60).nullable(),
-});
-
 /** Renames a room type, keeping its place in the order. */
-export function actUpdateRoomType(
+export async function actUpdateRoomType(
   ctx: CommandContext,
-  input: z.input<typeof roomTypeInput>,
-): CommandResult<{ roomTypeId: string }> {
+  input: Inputs['roomType'],
+): Promise<CommandResult<{ roomTypeId: string }>> {
   if (ctx.role !== 'owner') return fail('errors.forbidden');
-  const parsed = roomTypeInput.safeParse(input);
+  const parsed = (await loadSchemas()).roomTypeInput.safeParse(input);
   if (!parsed.success) return fail('property.errors.invalid');
   const type = ctx.store
     .getState()
@@ -71,17 +71,18 @@ export function actUpdateRoomType(
 }
 
 /** Moves a room type one place within its building, and stores the whole order so nothing else shifts. */
-export function actMoveRoomType(
+export async function actMoveRoomType(
   ctx: CommandContext,
   input: { roomTypeId: string; direction: 'up' | 'down' },
-): CommandResult<{ position: number }> {
+): Promise<CommandResult<{ position: number }>> {
   if (ctx.role !== 'owner') return fail('errors.forbidden');
   const data = ctx.store.getState().data;
   const type = data.room_type.find((t) => t.id === input.roomTypeId);
   if (!type) return fail('property.errors.notFound');
   const order = roomTypeOrderValue(data, type.buildingId).split(',');
   const next = moved(order, order.indexOf(type.id), input.direction);
-  if (next === order) return { ok: true, value: { position: order.indexOf(type.id) } };
+  if (next === order)
+    return { ok: true, value: { position: order.indexOf(type.id) } };
   const key = roomTypesKey(type.buildingId);
   const ok = ctx.store.dispatch({
     id: newId(),
@@ -96,10 +97,10 @@ export function actMoveRoomType(
 }
 
 /** Moves a floor one place in the plan's switch and sections. */
-export function actMoveFloor(
+export async function actMoveFloor(
   ctx: CommandContext,
   input: { buildingId: string; floor: number; direction: 'up' | 'down' },
-): CommandResult<{ position: number }> {
+): Promise<CommandResult<{ position: number }>> {
   if (ctx.role !== 'owner') return fail('errors.forbidden');
   const data = ctx.store.getState().data;
   if (!data.building.some((b) => b.id === input.buildingId))
@@ -121,10 +122,10 @@ export function actMoveFloor(
 }
 
 /** Removes a room type that no room uses. A type in use stays: the rooms need it. */
-export function actRemoveRoomType(
+export async function actRemoveRoomType(
   ctx: CommandContext,
   input: { roomTypeId: string },
-): CommandResult<{ roomTypeId: string }> {
+): Promise<CommandResult<{ roomTypeId: string }>> {
   if (ctx.role !== 'owner') return fail('errors.forbidden');
   const data = ctx.store.getState().data;
   const type = data.room_type.find((t) => t.id === input.roomTypeId);

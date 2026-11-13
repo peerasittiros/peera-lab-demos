@@ -115,7 +115,7 @@ describe('meter round', () => {
       PERIOD,
     ).find((r) => r.roomId === room.id)!;
     const reading = (before.previous ?? 0) + 10;
-    const result = actSaveReading(ctx(store, 'caretaker'), {
+    const result = await actSaveReading(ctx(store, 'caretaker'), {
       roomId: room.id,
       meterKind: 'electricity',
       period: PERIOD,
@@ -136,7 +136,7 @@ describe('meter round', () => {
     const store = await readyStore();
     const room = store.getState().data.room[0]!;
     expect(
-      actSaveReading(ctx(store, 'tenant'), {
+      await actSaveReading(ctx(store, 'tenant'), {
         roomId: room.id,
         meterKind: 'water',
         period: PERIOD,
@@ -163,7 +163,7 @@ describe('billing run', () => {
         (r.electricity?.current == null || r.water?.current == null),
     );
     if (missing.length > 0) {
-      const blocked = actGenerateBilling(ctx(store, 'owner'), {
+      const blocked = await actGenerateBilling(ctx(store, 'owner'), {
         buildingId: building.id,
         period: PERIOD,
         estimateRoomIds: [],
@@ -174,7 +174,7 @@ describe('billing run', () => {
       });
     }
     const estimates = missing.map((r) => r.roomId);
-    const generated = actGenerateBilling(ctx(store, 'owner'), {
+    const generated = await actGenerateBilling(ctx(store, 'owner'), {
       buildingId: building.id,
       period: PERIOD,
       estimateRoomIds: estimates,
@@ -200,7 +200,7 @@ describe('billing run', () => {
     )!
       .rooms.filter((r) => !r.existingInvoiceId)
       .map((r) => r.roomId);
-    actGenerateBilling(ctx(store, 'owner'), {
+    await actGenerateBilling(ctx(store, 'owner'), {
       buildingId: building.id,
       period: PERIOD,
       estimateRoomIds: estimates,
@@ -221,7 +221,7 @@ describe('billing run', () => {
         amountSatang: l.amountSatang,
         meta: l.meta,
       }));
-    const adjusted = actAdjustDraftLines(ctx(store, 'owner'), {
+    const adjusted = await actAdjustDraftLines(ctx(store, 'owner'), {
       invoiceId: first.id,
       lines: [
         ...lines,
@@ -238,10 +238,10 @@ describe('billing run', () => {
       value: { totalSatang: first.totalSatang + 30000 },
     });
 
-    expect(actVoidDraft(ctx(store, 'owner'), { invoiceId: second.id }).ok).toBe(
-      true,
-    );
-    const sent = actSendBilling(ctx(store, 'owner'), {
+    expect(
+      (await actVoidDraft(ctx(store, 'owner'), { invoiceId: second.id })).ok,
+    ).toBe(true);
+    const sent = await actSendBilling(ctx(store, 'owner'), {
       buildingId: building.id,
       period: PERIOD,
     });
@@ -253,7 +253,7 @@ describe('billing run', () => {
       store.getState().data.invoice.find((i) => i.id === second.id)?.status,
     ).toBe('void');
     expect(
-      actAdjustDraftLines(ctx(store, 'owner'), {
+      await actAdjustDraftLines(ctx(store, 'owner'), {
         invoiceId: first.id,
         lines: [],
       }),
@@ -261,7 +261,9 @@ describe('billing run', () => {
       ok: false,
       error: 'billing.errors.notDraft',
     });
-    expect(actVoidDraft(ctx(store, 'owner'), { invoiceId: first.id })).toEqual({
+    expect(
+      await actVoidDraft(ctx(store, 'owner'), { invoiceId: first.id }),
+    ).toEqual({
       ok: false,
       error: 'billing.errors.notDraft',
     });
@@ -271,7 +273,7 @@ describe('billing run', () => {
     const store = await readyStore();
     const building = buildingOf(store);
     expect(
-      actGenerateBilling(ctx(store, 'caretaker'), {
+      await actGenerateBilling(ctx(store, 'caretaker'), {
         buildingId: building.id,
         period: PERIOD,
         estimateRoomIds: [],
@@ -288,7 +290,7 @@ describe('billing run', () => {
     )!
       .rooms.filter((r) => !r.existingInvoiceId)
       .map((r) => r.roomId);
-    actGenerateBilling(ctx(store, 'owner'), {
+    await actGenerateBilling(ctx(store, 'owner'), {
       buildingId: building.id,
       period: PERIOD,
       estimateRoomIds: estimates,

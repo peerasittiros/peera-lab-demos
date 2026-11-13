@@ -46,7 +46,7 @@ describe('actSubmitSlip', () => {
   it('lets a tenant record a slip for the open balance', async () => {
     const store = await readyStore();
     const { invoiceId, owed } = sentContract(store);
-    const result = actSubmitSlip(ctx(store, 'tenant'), {
+    const result = await actSubmitSlip(ctx(store, 'tenant'), {
       invoiceId,
       amountSatang: owed,
       slipUrl: null,
@@ -67,7 +67,7 @@ describe('actSubmitSlip', () => {
     const store = await readyStore();
     const { invoiceId, owed } = sentContract(store);
     expect(
-      actSubmitSlip(ctx(store, 'tenant'), {
+      await actSubmitSlip(ctx(store, 'tenant'), {
         invoiceId,
         amountSatang: owed + 1,
         slipUrl: null,
@@ -77,7 +77,7 @@ describe('actSubmitSlip', () => {
       error: 'payments.errors.exceedsBalance',
     });
     expect(
-      actSubmitSlip(ctx(store, 'caretaker'), {
+      await actSubmitSlip(ctx(store, 'caretaker'), {
         invoiceId,
         amountSatang: 1,
         slipUrl: null,
@@ -93,14 +93,14 @@ describe('actApprovePayment and actRejectPayment', () => {
   it('approves a slip: the receipt number, the invoice and the balance all move', async () => {
     const store = await readyStore();
     const { invoiceId, contractId, owed } = sentContract(store);
-    const slip = actSubmitSlip(ctx(store, 'tenant'), {
+    const slip = await actSubmitSlip(ctx(store, 'tenant'), {
       invoiceId,
       amountSatang: owed,
       slipUrl: null,
     });
     if (!slip.ok) throw new Error('slip failed');
 
-    const approved = actApprovePayment(ctx(store, 'owner'), {
+    const approved = await actApprovePayment(ctx(store, 'owner'), {
       paymentId: slip.value.paymentId,
     });
     expect(approved.ok).toBe(true);
@@ -119,14 +119,14 @@ describe('actApprovePayment and actRejectPayment', () => {
   it('only the owner approves or rejects', async () => {
     const store = await readyStore();
     const { invoiceId, owed } = sentContract(store);
-    const slip = actSubmitSlip(ctx(store, 'tenant'), {
+    const slip = await actSubmitSlip(ctx(store, 'tenant'), {
       invoiceId,
       amountSatang: owed,
       slipUrl: null,
     });
     if (!slip.ok) throw new Error('slip failed');
     expect(
-      actApprovePayment(ctx(store, 'tenant'), {
+      await actApprovePayment(ctx(store, 'tenant'), {
         paymentId: slip.value.paymentId,
       }),
     ).toEqual({
@@ -134,7 +134,7 @@ describe('actApprovePayment and actRejectPayment', () => {
       error: 'errors.forbidden',
     });
     expect(
-      actRejectPayment(ctx(store, 'caretaker'), {
+      await actRejectPayment(ctx(store, 'caretaker'), {
         paymentId: slip.value.paymentId,
         reason: 'no',
       }),
@@ -147,20 +147,22 @@ describe('actApprovePayment and actRejectPayment', () => {
   it('rejects a slip with a reason, and it cannot be decided twice', async () => {
     const store = await readyStore();
     const { invoiceId, owed } = sentContract(store);
-    const slip = actSubmitSlip(ctx(store, 'tenant'), {
+    const slip = await actSubmitSlip(ctx(store, 'tenant'), {
       invoiceId,
       amountSatang: owed,
       slipUrl: null,
     });
     if (!slip.ok) throw new Error('slip failed');
     expect(
-      actRejectPayment(ctx(store, 'owner'), {
-        paymentId: slip.value.paymentId,
-        reason: 'amount wrong',
-      }).ok,
+      (
+        await actRejectPayment(ctx(store, 'owner'), {
+          paymentId: slip.value.paymentId,
+          reason: 'amount wrong',
+        })
+      ).ok,
     ).toBe(true);
     expect(
-      actApprovePayment(ctx(store, 'owner'), {
+      await actApprovePayment(ctx(store, 'owner'), {
         paymentId: slip.value.paymentId,
       }),
     ).toEqual({

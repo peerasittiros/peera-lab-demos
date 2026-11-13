@@ -242,9 +242,9 @@ function ContractDetailBody({
       {canNotice ? (
         <form
           className="mb-6 flex flex-wrap items-end gap-3"
-          onSubmit={(e: FormEvent<HTMLFormElement>) => {
+          onSubmit={async (e: FormEvent<HTMLFormElement>) => {
             e.preventDefault();
-            const result = actGiveNotice(
+            const result = await actGiveNotice(
               { store: getStore(), role, now: () => new Date() },
               { contractId, noticeDate: notice },
             );
@@ -438,14 +438,14 @@ function MoveInBody({ locale }: { locale: Locale }) {
   ];
   const counter = `${step + 1} / ${stepLabels.length}`;
 
-  const submit = (event: FormEvent<HTMLFormElement>) => {
+  const submit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     if (!last) {
       if (stepValid[step]) setStep(step + 1);
       return;
     }
     if (!room || !stepValid.every(Boolean)) return;
-    const result = actMoveIn(
+    const result = await actMoveIn(
       { store: getStore(), role, now: () => new Date() },
       {
         roomId: room.id,
@@ -742,9 +742,9 @@ function MoveOutBody({
     <form
       lang={locale}
       className="flex flex-col gap-6"
-      onSubmit={(e) => {
+      onSubmit={async (e) => {
         e.preventDefault();
-        const result = actMoveOut(
+        const result = await actMoveOut(
           { store: getStore(), role, now: () => new Date() },
           {
             ...input,

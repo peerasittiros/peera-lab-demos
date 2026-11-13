@@ -1,8 +1,12 @@
-import { z } from 'zod';
 import { bangkokDate } from '@/src/domain/dates';
 import { readingFor } from '@/src/domain/meter-reading';
 import { newId } from '../ids';
-import type { CommandContext, CommandResult } from './payments';
+import type { Inputs } from '../schemas';
+import {
+  loadSchemas,
+  type CommandContext,
+  type CommandResult,
+} from './payments';
 import { readingHistory } from '../selectors/meters';
 
 /**
@@ -13,21 +17,15 @@ import { readingHistory } from '../selectors/meters';
 
 const READ_ROLES = ['owner', 'caretaker'] as const;
 
-const readingInput = z.object({
-  roomId: z.uuid(),
-  meterKind: z.enum(['electricity', 'water']),
-  period: z.string().regex(/^\d{4}-\d{2}$/),
-  reading: z.number().int().min(0),
-  rollover: z.boolean(),
-});
-
-export function actSaveReading(
+export async function actSaveReading(
   ctx: CommandContext,
-  input: z.input<typeof readingInput>,
-): CommandResult<{ unitsUsed: number | null; anomaly: string | null }> {
+  input: Inputs['reading'],
+): Promise<
+  CommandResult<{ unitsUsed: number | null; anomaly: string | null }>
+> {
   if (!READ_ROLES.includes(ctx.role as (typeof READ_ROLES)[number]))
     return { ok: false, error: 'errors.forbidden' };
-  const parsed = readingInput.safeParse(input);
+  const parsed = (await loadSchemas()).readingInput.safeParse(input);
   if (!parsed.success) return { ok: false, error: 'meters.errors.invalid' };
 
   const data = ctx.store.getState().data;

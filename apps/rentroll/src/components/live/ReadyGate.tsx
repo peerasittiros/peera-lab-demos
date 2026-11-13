@@ -25,7 +25,14 @@ export function ReadyGate({
   const { m } = translator(locale);
   const p = m.tenant.live;
 
-  if (status === 'loading') return <Skeleton locale={locale} lines={4} />;
+  if (status === 'loading')
+    return (
+      <>
+        {/* The page's heading while the data loads, so a screen never goes without one (axe: page-has-heading-one). */}
+        <h1 className="sr-only">{p.loading}</h1>
+        <Skeleton locale={locale} lines={4} />
+      </>
+    );
 
   if (status === 'error') {
     return (

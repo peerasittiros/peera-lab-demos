@@ -114,6 +114,8 @@ export function createStore(deps: StoreDeps): Store {
   let persistence: Persistence | null = null;
   let seen = new Set<string>();
   let sync: Sync | null = null;
+  /** Bumped by every `start()`; a snapshot write from an older run is dropped. */
+  let run = 0;
   const listeners = new Set<() => void>();
 
   const update = (patch: Partial<StoreState>) => {
@@ -140,6 +142,7 @@ export function createStore(deps: StoreDeps): Store {
     },
 
     async start() {
+      const current = ++run;
       update({ status: 'loading', note: null });
       persistence ??= await deps.openPersistence();
       update({ memoryOnly: persistence.memoryOnly });
@@ -149,11 +152,11 @@ export function createStore(deps: StoreDeps): Store {
       const today = deps.today();
 
       let snapshot = cached;
+      let fresh: Snapshot | null = null;
       let note: StoreNote = null;
       if (!cached || cached.snapshotDate !== today) {
         try {
-          const fresh = await deps.fetchSnapshot();
-          await persistence.saveSnapshot(fresh);
+          fresh = await deps.fetchSnapshot();
           snapshot = fresh;
         } catch (error) {
           console.error('[rentroll] snapshot fetch failed:', error);
@@ -179,6 +182,14 @@ export function createStore(deps: StoreDeps): Store {
         ops: storedOps,
         note,
       });
+
+      // The page is on screen; storing the copy for the next visit happens behind it, and a failure only costs that
+      // browser the download again.
+      if (fresh && current === run) {
+        persistence.saveSnapshot(fresh).catch((error) => {
+          console.error('[rentroll] snapshot store failed:', error);
+        });
+      }
     },
 
     dispatch(op) {

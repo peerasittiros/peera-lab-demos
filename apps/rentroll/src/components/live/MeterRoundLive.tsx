@@ -101,12 +101,12 @@ function MeterRoundBody({
 
   const read = rows.filter((r) => r.current !== null).length;
   const canRead = role !== 'tenant';
-  const save = (
+  const save = async (
     row: MeterRoomRow,
     value: string,
     rollover: boolean,
-  ): SaveResult => {
-    const result = actSaveReading(
+  ): Promise<SaveResult> => {
+    const result = await actSaveReading(
       { store: getStore(), role, now: () => new Date() },
       {
         roomId: row.roomId,
@@ -192,7 +192,11 @@ type ViewProps = {
   rates: MeterRates | null;
   rows: MeterRoomRow[];
   canRead: boolean;
-  save: (row: MeterRoomRow, value: string, rollover: boolean) => SaveResult;
+  save: (
+    row: MeterRoomRow,
+    value: string,
+    rollover: boolean,
+  ) => Promise<SaveResult>;
 };
 
 /** Units and amount for a reading as typed, for both views. */
@@ -297,8 +301,8 @@ function MeterStepper({
   const lower =
     row.previous !== null && value !== '' && Number(value) < row.previous;
 
-  const submit = () => {
-    const result = save(row, value, rollover);
+  const submit = async () => {
+    const result = await save(row, value, rollover);
     if (!result.ok) {
       setMessage(
         <span role="alert" className="text-danger">
@@ -611,10 +615,10 @@ function MeterTableRow({
   const lower =
     row.previous !== null && value !== '' && Number(value) < row.previous;
 
-  const onKeyDown = (event: KeyboardEvent<HTMLInputElement>) => {
+  const onKeyDown = async (event: KeyboardEvent<HTMLInputElement>) => {
     if (event.key !== 'Enter' || value === '') return;
     event.preventDefault();
-    const result = save(row, value, rollover);
+    const result = await save(row, value, rollover);
     if (!result.ok) {
       setState(
         <span role="alert" className="text-danger">

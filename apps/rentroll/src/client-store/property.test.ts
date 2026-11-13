@@ -60,7 +60,7 @@ describe('repair tickets', () => {
   it('a tenant request appears on the board; moving it to done closes it; a closed ticket does not move again', async () => {
     const store = await readyStore();
     const room = liveRoom(store);
-    const created = actCreateRepair(ctx(store, 'tenant'), {
+    const created = await actCreateRepair(ctx(store, 'tenant'), {
       roomId: room.id,
       category: 'plumbing',
       description: 'Tap leaks',
@@ -79,17 +79,19 @@ describe('repair tickets', () => {
     ).toMatchObject({ authorRole: 'tenant', body: 'Tap leaks' });
 
     expect(
-      actMoveRepair(ctx(store, 'owner'), {
-        ticketId: created.value.ticketId,
-        status: 'done',
-      }).ok,
+      (
+        await actMoveRepair(ctx(store, 'owner'), {
+          ticketId: created.value.ticketId,
+          status: 'done',
+        })
+      ).ok,
     ).toBe(true);
     const closed = store
       .getState()
       .data.repair_ticket.find((t) => t.id === created.value.ticketId)!;
     expect(closed.closedAt).not.toBeNull();
     expect(
-      actMoveRepair(ctx(store, 'owner'), {
+      await actMoveRepair(ctx(store, 'owner'), {
         ticketId: created.value.ticketId,
         status: 'new',
       }),
@@ -106,7 +108,7 @@ describe('repair tickets', () => {
       .data.room.find(
         (r) => r.id === tenantContract(store.getState().data, TODAY)!.roomId,
       )!;
-    const created = actCreateRepair(ctx(store, 'tenant'), {
+    const created = await actCreateRepair(ctx(store, 'tenant'), {
       roomId: room.id,
       category: 'aircon',
       description: 'Not cooling',
@@ -116,7 +118,7 @@ describe('repair tickets', () => {
     if (!created.ok) throw new Error('create failed');
     const id = created.value.ticketId;
     expect(
-      actUpdateRepair(ctx(store, 'owner'), {
+      await actUpdateRepair(ctx(store, 'owner'), {
         ticketId: id,
         assignee: 'Somchai',
         scheduledAt: null,
@@ -125,19 +127,23 @@ describe('repair tickets', () => {
       }),
     ).toEqual({ ok: false, error: 'ownerRepairs.errors.billNeedsCost' });
     expect(
-      actUpdateRepair(ctx(store, 'owner'), {
-        ticketId: id,
-        assignee: 'Somchai',
-        scheduledAt: null,
-        costSatang: 50000,
-        billToRenter: true,
-      }).ok,
+      (
+        await actUpdateRepair(ctx(store, 'owner'), {
+          ticketId: id,
+          assignee: 'Somchai',
+          scheduledAt: null,
+          costSatang: 50000,
+          billToRenter: true,
+        })
+      ).ok,
     ).toBe(true);
     expect(
-      actAddRepairNote(ctx(store, 'owner'), {
-        ticketId: id,
-        body: 'Coming Friday',
-      }).ok,
+      (
+        await actAddRepairNote(ctx(store, 'owner'), {
+          ticketId: id,
+          body: 'Coming Friday',
+        })
+      ).ok,
     ).toBe(true);
     expect(ticketThread(store.getState().data, id).map((m) => m.body)).toEqual([
       'Not cooling',
@@ -153,7 +159,7 @@ describe('repair tickets', () => {
     const ticket = store.getState().data.repair_ticket[0];
     if (!ticket) return;
     expect(
-      actMoveRepair(ctx(store, 'tenant'), {
+      await actMoveRepair(ctx(store, 'tenant'), {
         ticketId: ticket.id,
         status: 'scheduled',
       }),
@@ -177,7 +183,7 @@ describe('reminders, announcements, maintenance and notice', () => {
     const first = overdue[0]!;
     expect(first.daysLate).toBeGreaterThan(0);
     expect(
-      actSendReminder(ctx(store, 'owner'), { invoiceId: first.id }).ok,
+      (await actSendReminder(ctx(store, 'owner'), { invoiceId: first.id })).ok,
     ).toBe(true);
     const after = overdueList(
       store.getState().data,
@@ -191,7 +197,7 @@ describe('reminders, announcements, maintenance and notice', () => {
   it('an announcement appears in the tenant messages for its building', async () => {
     const store = await readyStore();
     const building = store.getState().data.building[0]!;
-    const posted = actPostAnnouncement(ctx(store, 'owner'), {
+    const posted = await actPostAnnouncement(ctx(store, 'owner'), {
       buildingId: building.id,
       titleTh: 'ประกาศ',
       titleEn: 'Water off Friday',
@@ -213,34 +219,40 @@ describe('reminders, announcements, maintenance and notice', () => {
     const store = await readyStore();
     const room = liveRoom(store);
     expect(
-      actSetMaintenance(ctx(store, 'owner'), {
-        roomId: room.id,
-        maintenance: true,
-      }).ok,
+      (
+        await actSetMaintenance(ctx(store, 'owner'), {
+          roomId: room.id,
+          maintenance: true,
+        })
+      ).ok,
     ).toBe(true);
     const row = roomMap(store.getState().data, room.buildingId, TODAY).find(
       (r) => r.roomId === room.id,
     )!;
     expect(row.status).toBe('maintenance');
     expect(
-      actSetMaintenance(ctx(store, 'owner'), {
-        roomId: room.id,
-        maintenance: false,
-      }).ok,
+      (
+        await actSetMaintenance(ctx(store, 'owner'), {
+          roomId: room.id,
+          maintenance: false,
+        })
+      ).ok,
     ).toBe(true);
 
     const contract = liveContractOf(store.getState().data, room.id, TODAY)!;
     expect(
-      actGiveNotice(ctx(store, 'owner'), {
-        contractId: contract.id,
-        noticeDate: TODAY,
-      }).ok,
+      (
+        await actGiveNotice(ctx(store, 'owner'), {
+          contractId: contract.id,
+          noticeDate: TODAY,
+        })
+      ).ok,
     ).toBe(true);
     expect(
       roomDetail(store.getState().data, room.id, TODAY)?.contract?.status,
     ).toBe('notice_given');
     expect(
-      actGiveNotice(ctx(store, 'owner'), {
+      await actGiveNotice(ctx(store, 'owner'), {
         contractId: contract.id,
         noticeDate: TODAY,
       }),
@@ -261,7 +273,7 @@ describe('move-in and move-out', () => {
         !data.contract.some((c) => c.roomId === r.id && c.status !== 'ended'),
     )!;
     const type = data.room_type.find((t) => t.id === vacant.roomTypeId)!;
-    const result = actMoveIn(ctx(store, 'owner'), {
+    const result = await actMoveIn(ctx(store, 'owner'), {
       roomId: vacant.id,
       renter: { mode: 'new', name: 'Test Renter', phone: null },
       startDate: TODAY,
@@ -290,7 +302,7 @@ describe('move-in and move-out', () => {
     ).toBe(result.value.total);
     expect(roomDetail(after, vacant.id, TODAY)?.status).toBe('occupied');
     expect(
-      actMoveIn(ctx(store, 'owner'), {
+      await actMoveIn(ctx(store, 'owner'), {
         roomId: vacant.id,
         renter: { mode: 'new', name: 'Second', phone: null },
         startDate: TODAY,
@@ -337,7 +349,7 @@ describe('move-in and move-out', () => {
     expect(
       moveOutPreview(store.getState().data, input)?.result.refund,
     ).toBeTypeOf('number');
-    const done = actMoveOut(ctx(store, 'owner'), input);
+    const done = await actMoveOut(ctx(store, 'owner'), input);
     expect(done.ok).toBe(true);
     expect(
       store.getState().data.contract.find((c) => c.id === contract.id)?.status,
@@ -347,7 +359,7 @@ describe('move-in and move-out', () => {
         .getState()
         .data.settlement.some((s) => s.contractId === contract.id),
     ).toBe(true);
-    expect(actMoveOut(ctx(store, 'owner'), input)).toEqual({
+    expect(await actMoveOut(ctx(store, 'owner'), input)).toEqual({
       ok: false,
       error: 'contracts.errors.notActive',
     });

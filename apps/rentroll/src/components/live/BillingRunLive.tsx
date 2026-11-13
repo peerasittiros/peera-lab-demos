@@ -220,8 +220,8 @@ function BillingRunBody({
             variant={allGenerated ? 'secondary' : 'primary'}
             locale={locale}
             disabled={allGenerated || plan?.plan == null}
-            onClick={() => {
-              const result = actGenerateBilling(context(), {
+            onClick={async () => {
+              const result = await actGenerateBilling(context(), {
                 buildingId: building.id,
                 period,
                 estimateRoomIds: estimates,
@@ -272,8 +272,8 @@ function BillingRunBody({
             variant={allGenerated ? 'primary' : 'secondary'}
             locale={locale}
             disabled={drafts.length === 0}
-            onClick={() => {
-              const result = actSendBilling(context(), {
+            onClick={async () => {
+              const result = await actSendBilling(context(), {
                 buildingId: building.id,
                 period,
               });
@@ -334,8 +334,8 @@ function DraftCard({
   const total = lines.reduce((sum, l) => sum + l.amountSatang, 0);
   const shownTotal = draft ? total : invoice.totalSatang;
 
-  const save = () => {
-    const result = actAdjustDraftLines(context(), {
+  const save = async () => {
+    const result = await actAdjustDraftLines(context(), {
       invoiceId: invoice.id,
       lines: lines.map((l) => ({
         id: l.id,
@@ -534,8 +534,8 @@ function DraftCard({
               type="button"
               variant="danger"
               locale={locale}
-              onClick={() => {
-                const result = actVoidDraft(context(), {
+              onClick={async () => {
+                const result = await actVoidDraft(context(), {
                   invoiceId: invoice.id,
                 });
                 onReport(

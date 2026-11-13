@@ -21,6 +21,20 @@ const DB_VERSION = 1;
 const SNAPSHOT_STORE = 'snapshot';
 const OPS_STORE = 'ops';
 const SNAPSHOT_KEY = 'current';
+/**
+ * localStorage mirror of the stored snapshot's day, `YYYY-MM-DD`. The head script (`SnapshotPreload`) reads it
+ * synchronously, before IndexedDB can answer, to skip preloading a snapshot this browser already has for today.
+ */
+export const SNAPSHOT_HINT_KEY = 'rentroll.snapshot';
+
+function writeHint(day: string | null) {
+  try {
+    if (day === null) localStorage.removeItem(SNAPSHOT_HINT_KEY);
+    else localStorage.setItem(SNAPSHOT_HINT_KEY, day);
+  } catch {
+    // Storage blocked: the head script preloads every visit, which only costs a cached request.
+  }
+}
 
 export function memoryPersistence(memoryOnly = true): Persistence {
   let snapshot: Snapshot | null = null;
@@ -118,6 +132,7 @@ export async function openPersistence(): Promise<Persistence> {
         const tx = db.transaction(SNAPSHOT_STORE, 'readwrite');
         tx.objectStore(SNAPSHOT_STORE).put(snapshot, SNAPSHOT_KEY);
         await transactionDone(tx);
+        writeHint(snapshot.snapshotDate);
       } catch (error) {
         logError('write snapshot', error);
       }
@@ -150,6 +165,7 @@ export async function openPersistence(): Promise<Persistence> {
       } catch (error) {
         logError('clear', error);
       }
+      writeHint(null);
     },
   };
 }

@@ -96,15 +96,15 @@ function NoteForm({ locale }: { locale: Locale }) {
   const [noteTh, setNoteTh] = useState(values.noteTh ?? '');
   const [noteEn, setNoteEn] = useState(values.noteEn ?? '');
 
-  const submit = (event: FormEvent<HTMLFormElement>) => {
+  const submit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     const ctx = commandContext(role);
     const results = [
-      actSaveSetting(ctx, {
+      await actSaveSetting(ctx, {
         key: SETTING.noteTh,
         value: noteTh.trim() === '' ? null : noteTh,
       }),
-      actSaveSetting(ctx, {
+      await actSaveSetting(ctx, {
         key: SETTING.noteEn,
         value: noteEn.trim() === '' ? null : noteEn,
       }),
@@ -163,9 +163,9 @@ function DaysForm({
   const [billingDay, setBillingDay] = useState(String(building.billingDay));
   const [dueDay, setDueDay] = useState(String(building.dueDay));
 
-  const submit = (event: FormEvent<HTMLFormElement>) => {
+  const submit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
-    const result = actUpdateBuilding(commandContext(role), {
+    const result = await actUpdateBuilding(commandContext(role), {
       buildingId: building.id,
       nameTh: building.nameTh,
       nameEn: building.nameEn,

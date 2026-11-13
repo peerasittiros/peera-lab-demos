@@ -37,7 +37,7 @@ describe('actIssueCreditNote', () => {
     const store = await readyStore();
     const invoice = sentInvoice(store);
     const before = balanceOf(store.getState().data, invoice);
-    const result = actIssueCreditNote(ctx(store, 'owner'), {
+    const result = await actIssueCreditNote(ctx(store, 'owner'), {
       invoiceId: invoice.id,
       amountSatang: 10000,
       reason: 'Water meter error',
@@ -55,12 +55,12 @@ describe('actIssueCreditNote', () => {
   it('numbers the second note for the same invoice as -2', async () => {
     const store = await readyStore();
     const invoice = sentInvoice(store);
-    actIssueCreditNote(ctx(store, 'owner'), {
+    await actIssueCreditNote(ctx(store, 'owner'), {
       invoiceId: invoice.id,
       amountSatang: 100,
       reason: 'First',
     });
-    const second = actIssueCreditNote(ctx(store, 'owner'), {
+    const second = await actIssueCreditNote(ctx(store, 'owner'), {
       invoiceId: invoice.id,
       amountSatang: 100,
       reason: 'Second',
@@ -76,7 +76,7 @@ describe('actIssueCreditNote', () => {
     const invoice = sentInvoice(store);
     const owed = balanceOf(store.getState().data, invoice);
     expect(
-      actIssueCreditNote(ctx(store, 'owner'), {
+      await actIssueCreditNote(ctx(store, 'owner'), {
         invoiceId: invoice.id,
         amountSatang: owed + 1,
         reason: 'Too much',
@@ -88,7 +88,7 @@ describe('actIssueCreditNote', () => {
     const store = await readyStore();
     const invoice = sentInvoice(store);
     const owed = balanceOf(store.getState().data, invoice);
-    const result = actIssueCreditNote(ctx(store, 'owner'), {
+    const result = await actIssueCreditNote(ctx(store, 'owner'), {
       invoiceId: invoice.id,
       amountSatang: owed,
       reason: 'Cancelled',
@@ -105,7 +105,7 @@ describe('actIssueCreditNote', () => {
     const store = await readyStore();
     const invoice = sentInvoice(store);
     expect(
-      actIssueCreditNote(ctx(store, 'caretaker'), {
+      await actIssueCreditNote(ctx(store, 'caretaker'), {
         invoiceId: invoice.id,
         amountSatang: 100,
         reason: 'Nope',
@@ -118,7 +118,7 @@ describe('actUpdateBuilding', () => {
   it('saves new names, PromptPay ID and days', async () => {
     const store = await readyStore();
     const building = store.getState().data.building[0]!;
-    const result = actUpdateBuilding(ctx(store, 'owner'), {
+    const result = await actUpdateBuilding(ctx(store, 'owner'), {
       buildingId: building.id,
       nameTh: 'อาคารทดสอบ',
       nameEn: 'Test building',
@@ -142,7 +142,7 @@ describe('actUpdateBuilding', () => {
     const store = await readyStore();
     const building = store.getState().data.building[0]!;
     expect(
-      actUpdateBuilding(ctx(store, 'owner'), {
+      await actUpdateBuilding(ctx(store, 'owner'), {
         buildingId: building.id,
         nameTh: 'อาคาร',
         nameEn: null,
@@ -170,7 +170,7 @@ describe('actAddRatePlan', () => {
   it('adds a plan from a future date, which applies only from that day', async () => {
     const store = await readyStore();
     const buildingId = store.getState().data.building[0]!.id;
-    const result = actAddRatePlan(
+    const result = await actAddRatePlan(
       ctx(store, 'owner'),
       plan(buildingId, '2026-12-01'),
     );
@@ -186,7 +186,7 @@ describe('actAddRatePlan', () => {
     const store = await readyStore();
     const buildingId = store.getState().data.building[0]!.id;
     expect(
-      actAddRatePlan(ctx(store, 'owner'), plan(buildingId, '2026-10-01')),
+      await actAddRatePlan(ctx(store, 'owner'), plan(buildingId, '2026-10-01')),
     ).toEqual({ ok: false, error: 'property.errors.pastDate' });
   });
 
@@ -194,10 +194,15 @@ describe('actAddRatePlan', () => {
     const store = await readyStore();
     const buildingId = store.getState().data.building[0]!.id;
     expect(
-      actAddRatePlan(ctx(store, 'owner'), plan(buildingId, '2026-12-01')).ok,
+      (
+        await actAddRatePlan(
+          ctx(store, 'owner'),
+          plan(buildingId, '2026-12-01'),
+        )
+      ).ok,
     ).toBe(true);
     expect(
-      actAddRatePlan(ctx(store, 'owner'), plan(buildingId, '2026-12-01')),
+      await actAddRatePlan(ctx(store, 'owner'), plan(buildingId, '2026-12-01')),
     ).toEqual({ ok: false, error: 'property.errors.ratePlanDuplicate' });
   });
 });

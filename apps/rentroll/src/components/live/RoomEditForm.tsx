@@ -51,9 +51,9 @@ export function RoomEditForm({
     setEditing(true);
   };
 
-  const submit = (event: FormEvent<HTMLFormElement>) => {
+  const submit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
-    const result = actUpdateRoom(commandContext(role), {
+    const result = await actUpdateRoom(commandContext(role), {
       roomId: room.id,
       number,
       floor: Number(floor),

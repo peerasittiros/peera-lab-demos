@@ -1,12 +1,16 @@
-import { z } from 'zod';
 import { bangkokDate } from '@/src/domain/dates';
 import { daysLate } from '@/src/domain/late-fee';
 import { ratePlanOn } from '@/src/domain/property';
 import { canMove, type RepairStatus } from '@/src/domain/repair';
 import { newId } from '../ids';
+import type { Inputs } from '../schemas';
 import { balanceOf } from '../settlement';
 import { liveContractOf } from '../selectors/property';
-import type { CommandContext, CommandResult } from './payments';
+import {
+  loadSchemas,
+  type CommandContext,
+  type CommandResult,
+} from './payments';
 
 /**
  * Commands for the property and tenant-service screens (SPEC §4 O2–O5, O15, O16): room maintenance, giving notice,
@@ -20,10 +24,10 @@ const fail = (error: string): { ok: false; error: string } => ({
 const isOwner = (ctx: CommandContext) => ctx.role === 'owner';
 const CAN_HANDLE_REPAIRS = ['owner', 'caretaker'] as const;
 
-export function actSetMaintenance(
+export async function actSetMaintenance(
   ctx: CommandContext,
   input: { roomId: string; maintenance: boolean },
-): CommandResult<{ roomId: string }> {
+): Promise<CommandResult<{ roomId: string }>> {
   if (!isOwner(ctx)) return fail('errors.forbidden');
   if (!ctx.store.getState().data.room.some((r) => r.id === input.roomId))
     return fail('property.errors.notFound');
@@ -39,12 +43,12 @@ export function actSetMaintenance(
     : fail('property.errors.saveFailed');
 }
 
-export function actGiveNotice(
+export async function actGiveNotice(
   ctx: CommandContext,
   input: { contractId: string; noticeDate: string },
-): CommandResult<{ contractId: string }> {
+): Promise<CommandResult<{ contractId: string }>> {
   if (!isOwner(ctx)) return fail('errors.forbidden');
-  if (!z.iso.date().safeParse(input.noticeDate).success)
+  if (!(await loadSchemas()).dateInput.safeParse(input.noticeDate).success)
     return fail('property.errors.invalid');
   const contract = ctx.store
     .getState()
@@ -63,20 +67,12 @@ export function actGiveNotice(
     : fail('contracts.errors.saveFailed');
 }
 
-const announcementInput = z.object({
-  buildingId: z.uuid(),
-  titleTh: z.string().trim().min(1).max(120),
-  titleEn: z.string().trim().min(1).max(120),
-  bodyTh: z.string().trim().min(1).max(2000),
-  bodyEn: z.string().trim().min(1).max(2000),
-});
-
-export function actPostAnnouncement(
+export async function actPostAnnouncement(
   ctx: CommandContext,
-  input: z.input<typeof announcementInput>,
-): CommandResult<{ announcementId: string }> {
+  input: Inputs['announcement'],
+): Promise<CommandResult<{ announcementId: string }>> {
   if (!isOwner(ctx)) return fail('errors.forbidden');
-  const parsed = announcementInput.safeParse(input);
+  const parsed = (await loadSchemas()).announcementInput.safeParse(input);
   if (!parsed.success) return fail('property.errors.invalid');
   const announcementId = newId();
   const ok = ctx.store.dispatch({
@@ -95,27 +91,12 @@ export function actPostAnnouncement(
     : fail('property.errors.saveFailed');
 }
 
-const repairInput = z.object({
-  roomId: z.uuid(),
-  category: z.enum([
-    'electrical',
-    'plumbing',
-    'aircon',
-    'furniture',
-    'internet',
-    'other',
-  ]),
-  description: z.string().trim().min(1).max(2000),
-  preferredTime: z.enum(['morning', 'afternoon', 'evening', 'anytime']),
-  allowEntry: z.boolean(),
-});
-
 /** A repair request. The tenant's renter is the primary renter of the room's live contract, when there is one. */
-export function actCreateRepair(
+export async function actCreateRepair(
   ctx: CommandContext,
-  input: z.input<typeof repairInput>,
-): CommandResult<{ ticketId: string }> {
-  const parsed = repairInput.safeParse(input);
+  input: Inputs['repair'],
+): Promise<CommandResult<{ ticketId: string }>> {
+  const parsed = (await loadSchemas()).repairInput.safeParse(input);
   if (!parsed.success) return fail('ownerRepairs.errors.saveFailed');
   const data = ctx.store.getState().data;
   const room = data.room.find((r) => r.id === parsed.data.roomId);
@@ -151,10 +132,10 @@ export function actCreateRepair(
 }
 
 /** Moves a ticket to another status. A closed ticket does not move again. */
-export function actMoveRepair(
+export async function actMoveRepair(
   ctx: CommandContext,
   input: { ticketId: string; status: RepairStatus },
-): CommandResult<{ status: RepairStatus }> {
+): Promise<CommandResult<{ status: RepairStatus }>> {
   if (
     !CAN_HANDLE_REPAIRS.includes(
       ctx.role as (typeof CAN_HANDLE_REPAIRS)[number],
@@ -189,7 +170,7 @@ export function actMoveRepair(
 }
 
 /** Sets the assignee, schedule, cost and billing choice. Billing the tenant needs a cost above zero. */
-export function actUpdateRepair(
+export async function actUpdateRepair(
   ctx: CommandContext,
   input: {
     ticketId: string;
@@ -198,7 +179,7 @@ export function actUpdateRepair(
     costSatang: number | null;
     billToRenter: boolean;
   },
-): CommandResult<{ ticketId: string }> {
+): Promise<CommandResult<{ ticketId: string }>> {
   if (
     !CAN_HANDLE_REPAIRS.includes(
       ctx.role as (typeof CAN_HANDLE_REPAIRS)[number],
@@ -232,10 +213,10 @@ export function actUpdateRepair(
 }
 
 /** A message on a ticket's timeline, from the owner, the caretaker or the tenant. */
-export function actAddRepairNote(
+export async function actAddRepairNote(
   ctx: CommandContext,
   input: { ticketId: string; body: string },
-): CommandResult<{ messageId: string }> {
+): Promise<CommandResult<{ messageId: string }>> {
   const body = input.body.trim();
   if (body === '' || body.length > 2000)
     return fail('ownerRepairs.errors.saveFailed');
@@ -265,10 +246,10 @@ export function actAddRepairNote(
 }
 
 /** A reminder about an overdue invoice. Nothing is sent: it is recorded in the chat preview only. */
-export function actSendReminder(
+export async function actSendReminder(
   ctx: CommandContext,
   input: { invoiceId: string },
-): CommandResult<{ daysOverdue: number }> {
+): Promise<CommandResult<{ daysOverdue: number }>> {
   if (!isOwner(ctx)) return fail('errors.forbidden');
   const data = ctx.store.getState().data;
   const invoice = data.invoice.find((i) => i.id === input.invoiceId);
@@ -299,28 +280,16 @@ export function actSendReminder(
     : fail('payments.errors.saveFailed');
 }
 
-const buildingInput = z.object({
-  buildingId: z.uuid(),
-  nameTh: z.string().trim().min(1).max(120),
-  nameEn: z.string().trim().max(120).nullable(),
-  promptpayId: z.string().trim().min(1).max(40),
-  billingDay: z.number().int().min(1).max(28),
-  dueDay: z.number().int().min(1).max(28),
-  /** Omitted keeps the address on file; `null` clears it. */
-  addressTh: z.string().trim().max(200).nullable().optional(),
-  addressEn: z.string().trim().max(200).nullable().optional(),
-});
-
 /**
  * Edits a building's names, address, PromptPay ID and billing days (SPEC §4 O5). The address is edited on the Building
  * settings page; the billing days on the Billing page, so each form sends only its own fields.
  */
-export function actUpdateBuilding(
+export async function actUpdateBuilding(
   ctx: CommandContext,
-  input: z.input<typeof buildingInput>,
-): CommandResult<{ buildingId: string }> {
+  input: Inputs['building'],
+): Promise<CommandResult<{ buildingId: string }>> {
   if (!isOwner(ctx)) return fail('errors.forbidden');
-  const parsed = buildingInput.safeParse(input);
+  const parsed = (await loadSchemas()).buildingInput.safeParse(input);
   if (!parsed.success) return fail('property.errors.invalid');
   const building = ctx.store
     .getState()
@@ -348,28 +317,16 @@ export function actUpdateBuilding(
     : fail('property.errors.saveFailed');
 }
 
-const ratePlanInput = z.object({
-  buildingId: z.uuid(),
-  validFrom: z.string().regex(/^\d{4}-\d{2}-\d{2}$/),
-  elecRateSatang: z.number().int().min(0),
-  elecMinSatang: z.number().int().min(0),
-  waterMode: z.enum(['per_unit', 'per_person']),
-  waterRateSatang: z.number().int().min(0),
-  waterMinSatang: z.number().int().min(0),
-  waterPerPersonSatang: z.number().int().min(0),
-  commonFeeSatang: z.number().int().min(0),
-});
-
 /**
  * Adds a rate plan that starts on `validFrom` (SPEC §4 O5). It can't start before today, and two plans in a building
  * can't start the same day. Bills generated earlier keep the plan they were generated with.
  */
-export function actAddRatePlan(
+export async function actAddRatePlan(
   ctx: CommandContext,
-  input: z.input<typeof ratePlanInput>,
-): CommandResult<{ planId: string }> {
+  input: Inputs['ratePlan'],
+): Promise<CommandResult<{ planId: string }>> {
   if (!isOwner(ctx)) return fail('errors.forbidden');
-  const parsed = ratePlanInput.safeParse(input);
+  const parsed = (await loadSchemas()).ratePlanInput.safeParse(input);
   if (!parsed.success) return fail('property.errors.invalid');
   const data = ctx.store.getState().data;
   const today = bangkokDate(ctx.now());
@@ -405,23 +362,13 @@ export function actAddRatePlan(
     : fail('property.errors.saveFailed');
 }
 
-const roomInput = z.object({
-  roomId: z.uuid(),
-  number: z.string().trim().min(1).max(12),
-  floor: z.number().int().min(-5).max(200),
-  roomTypeId: z.uuid(),
-  sizeSqm: z.number().positive().max(10000).nullable(),
-  elecMeterDigits: z.number().int().min(3).max(8),
-  waterMeterDigits: z.number().int().min(3).max(8),
-});
-
 /** Edits a room (SPEC §4 O3). A room number is unique within its building, and the type must belong to that building. */
-export function actUpdateRoom(
+export async function actUpdateRoom(
   ctx: CommandContext,
-  input: z.input<typeof roomInput>,
-): CommandResult<{ roomId: string }> {
+  input: Inputs['room'],
+): Promise<CommandResult<{ roomId: string }>> {
   if (!isOwner(ctx)) return fail('errors.forbidden');
-  const parsed = roomInput.safeParse(input);
+  const parsed = (await loadSchemas()).roomInput.safeParse(input);
   if (!parsed.success) return fail('property.errors.invalid');
   const data = ctx.store.getState().data;
   const room = data.room.find((r) => r.id === parsed.data.roomId);

@@ -41,10 +41,10 @@ function AnnouncementsBody({ locale }: { locale: Locale }) {
   const buildingName = (b: (typeof buildings)[number]) =>
     locale === 'th' ? b.nameTh : (b.nameEn ?? b.nameTh);
 
-  const submit = (event: FormEvent<HTMLFormElement>) => {
+  const submit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     if (!building) return;
-    const result = actPostAnnouncement(
+    const result = await actPostAnnouncement(
       { store: getStore(), role, now: () => new Date() },
       {
         buildingId: building.id,

@@ -157,9 +157,9 @@ function ReminderButton({
       variant="secondary"
       locale={locale}
       disabled={disabled || busy}
-      onClick={() => {
+      onClick={async () => {
         setBusy(true);
-        const result = actSendReminder(
+        const result = await actSendReminder(
           { store: getStore(), role, now: () => new Date() },
           { invoiceId },
         );

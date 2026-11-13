@@ -1,5 +1,10 @@
 import { describe, expect, it } from 'vitest';
-import { byStoredOrder, formatOrder, moved, parseOrder } from '@/src/domain/order';
+import {
+  byStoredOrder,
+  formatOrder,
+  moved,
+  parseOrder,
+} from '@/src/domain/order';
 import { memoryPersistence } from '../idb';
 import { createStore, type Store } from '../store';
 import { snapshotFor } from '../testing';
@@ -60,17 +65,21 @@ const buildingsOf = (store: Store) => store.getState().data.building;
 describe('actSaveSetting', () => {
   it('keeps a phone in the browser and clears it again', async () => {
     const store = await readyStore();
-    const result = actSaveSetting(ctx(store, 'owner'), {
+    const result = await actSaveSetting(ctx(store, 'owner'), {
       key: SETTING.phone,
       value: ' 02-123-4567 ',
     });
     expect(result).toEqual({ ok: true, value: { key: SETTING.phone } });
-    expect(settingValue(store.getState().data, SETTING.phone)).toBe('02-123-4567');
+    expect(settingValue(store.getState().data, SETTING.phone)).toBe(
+      '02-123-4567',
+    );
     expect(
-      actSaveSetting(ctx(store, 'owner'), {
-        key: SETTING.phone,
-        value: null,
-      }).ok,
+      (
+        await actSaveSetting(ctx(store, 'owner'), {
+          key: SETTING.phone,
+          value: null,
+        })
+      ).ok,
     ).toBe(true);
     expect(settingValue(store.getState().data, SETTING.phone)).toBeNull();
   });
@@ -78,14 +87,17 @@ describe('actSaveSetting', () => {
   it('refuses a key no page writes', async () => {
     const store = await readyStore();
     expect(
-      actSaveSetting(ctx(store, 'owner'), { key: 'nonsense', value: 'x' }),
+      await actSaveSetting(ctx(store, 'owner'), {
+        key: 'nonsense',
+        value: 'x',
+      }),
     ).toEqual({ ok: false, error: 'settings.errors.unknownKey' });
   });
 
   it('refuses a value longer than its key allows', async () => {
     const store = await readyStore();
     expect(
-      actSaveSetting(ctx(store, 'owner'), {
+      await actSaveSetting(ctx(store, 'owner'), {
         key: SETTING.ownerName,
         value: 'x'.repeat(301),
       }),
@@ -95,7 +107,7 @@ describe('actSaveSetting', () => {
   it('is owner only', async () => {
     const store = await readyStore();
     expect(
-      actSaveSetting(ctx(store, 'caretaker'), {
+      await actSaveSetting(ctx(store, 'caretaker'), {
         key: SETTING.logo,
         value: 'data:image/webp;base64,AA',
       }),
@@ -107,7 +119,7 @@ describe('actUpdateRoomType', () => {
   it('renames a type and keeps its place', async () => {
     const store = await readyStore();
     const type = store.getState().data.room_type[0]!;
-    const result = actUpdateRoomType(ctx(store, 'owner'), {
+    const result = await actUpdateRoomType(ctx(store, 'owner'), {
       roomTypeId: type.id,
       nameTh: 'ห้องพัดลม (ใหม่)',
       nameEn: 'Fan room (new)',
@@ -125,14 +137,14 @@ describe('actUpdateRoomType', () => {
     const store = await readyStore();
     const type = store.getState().data.room_type[0]!;
     expect(
-      actUpdateRoomType(ctx(store, 'owner'), {
+      await actUpdateRoomType(ctx(store, 'owner'), {
         roomTypeId: type.id,
         nameTh: '   ',
         nameEn: null,
       }),
     ).toEqual({ ok: false, error: 'property.errors.invalid' });
     expect(
-      actUpdateRoomType(ctx(store, 'owner'), {
+      await actUpdateRoomType(ctx(store, 'owner'), {
         roomTypeId: '00000000-0000-4000-8000-00000000dead',
         nameTh: 'ไม่มีจริง',
         nameEn: null,
@@ -144,7 +156,7 @@ describe('actUpdateRoomType', () => {
     const store = await readyStore();
     const type = store.getState().data.room_type[0]!;
     expect(
-      actUpdateRoomType(ctx(store, 'caretaker'), {
+      await actUpdateRoomType(ctx(store, 'caretaker'), {
         roomTypeId: type.id,
         nameTh: 'x',
         nameEn: null,
@@ -162,7 +174,7 @@ describe('actMoveRoomType', () => {
       .data.room_type.filter((t) => t.buildingId === buildingId);
     const first = types[0]!;
     const second = types[1]!;
-    const result = actMoveRoomType(ctx(store, 'owner'), {
+    const result = await actMoveRoomType(ctx(store, 'owner'), {
       roomTypeId: second.id,
       direction: 'up',
     });
@@ -179,19 +191,21 @@ describe('actMoveRoomType', () => {
       .getState()
       .data.room_type.find((t) => t.buildingId === buildingId)!;
     expect(
-      actMoveRoomType(ctx(store, 'owner'), {
+      await actMoveRoomType(ctx(store, 'owner'), {
         roomTypeId: first.id,
         direction: 'up',
       }),
     ).toEqual({ ok: true, value: { position: 0 } });
-    expect(settingValue(store.getState().data, roomTypesKey(buildingId))).toBeNull();
+    expect(
+      settingValue(store.getState().data, roomTypesKey(buildingId)),
+    ).toBeNull();
   });
 
   it('is owner only', async () => {
     const store = await readyStore();
     const type = store.getState().data.room_type[0]!;
     expect(
-      actMoveRoomType(ctx(store, 'caretaker'), {
+      await actMoveRoomType(ctx(store, 'caretaker'), {
         roomTypeId: type.id,
         direction: 'down',
       }),
@@ -204,7 +218,7 @@ describe('actMoveFloor', () => {
     const store = await readyStore();
     const buildingId = buildingsOf(store)[0]!.id;
     expect(
-      actMoveFloor(ctx(store, 'owner'), {
+      await actMoveFloor(ctx(store, 'owner'), {
         buildingId,
         floor: 2,
         direction: 'up',
@@ -219,7 +233,7 @@ describe('actMoveFloor', () => {
     const store = await readyStore();
     const buildingId = buildingsOf(store)[0]!.id;
     expect(
-      actMoveFloor(ctx(store, 'owner'), {
+      await actMoveFloor(ctx(store, 'owner'), {
         buildingId,
         floor: 1,
         direction: 'up',
@@ -230,7 +244,7 @@ describe('actMoveFloor', () => {
   it('refuses a building that is not there', async () => {
     const store = await readyStore();
     expect(
-      actMoveFloor(ctx(store, 'owner'), {
+      await actMoveFloor(ctx(store, 'owner'), {
         buildingId: '00000000-0000-4000-8000-00000000dead',
         floor: 1,
         direction: 'up',
@@ -246,21 +260,21 @@ describe('actRemoveRoomType', () => {
       .getState()
       .data.room_type.find((t) => t.nameEn === 'Spare type')!;
     expect(
-      actRemoveRoomType(ctx(store, 'owner'), { roomTypeId: spare.id }),
+      await actRemoveRoomType(ctx(store, 'owner'), { roomTypeId: spare.id }),
     ).toEqual({ ok: true, value: { roomTypeId: spare.id } });
-    expect(
-      store.getState().data.room_type.some((t) => t.id === spare.id),
-    ).toBe(false);
+    expect(store.getState().data.room_type.some((t) => t.id === spare.id)).toBe(
+      false,
+    );
   });
 
   it('keeps a type a room still uses', async () => {
     const store = await readyStore();
     const type = store.getState().data.room_type[0]!;
-    expect(store.getState().data.room.some((r) => r.roomTypeId === type.id)).toBe(
-      true,
-    );
     expect(
-      actRemoveRoomType(ctx(store, 'owner'), { roomTypeId: type.id }),
+      store.getState().data.room.some((r) => r.roomTypeId === type.id),
+    ).toBe(true);
+    expect(
+      await actRemoveRoomType(ctx(store, 'owner'), { roomTypeId: type.id }),
     ).toEqual({ ok: false, error: 'property.errors.roomTypeInUse' });
   });
 
@@ -270,7 +284,7 @@ describe('actRemoveRoomType', () => {
       .getState()
       .data.room_type.find((t) => t.nameEn === 'Spare type')!;
     const buildingId = spare.buildingId;
-    actMoveRoomType(ctx(store, 'owner'), {
+    await actMoveRoomType(ctx(store, 'owner'), {
       roomTypeId: spare.id,
       direction: 'up',
     });
@@ -278,7 +292,7 @@ describe('actRemoveRoomType', () => {
       settingValue(store.getState().data, roomTypesKey(buildingId)),
     );
     expect(before).toContain(spare.id);
-    actRemoveRoomType(ctx(store, 'owner'), { roomTypeId: spare.id });
+    await actRemoveRoomType(ctx(store, 'owner'), { roomTypeId: spare.id });
     const after = parseOrder(
       settingValue(store.getState().data, roomTypesKey(buildingId)),
     );
@@ -292,7 +306,9 @@ describe('actRemoveRoomType', () => {
       .getState()
       .data.room_type.find((t) => t.nameEn === 'Spare type')!;
     expect(
-      actRemoveRoomType(ctx(store, 'caretaker'), { roomTypeId: spare.id }),
+      await actRemoveRoomType(ctx(store, 'caretaker'), {
+        roomTypeId: spare.id,
+      }),
     ).toEqual({ ok: false, error: 'errors.forbidden' });
   });
 });

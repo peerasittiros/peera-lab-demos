@@ -237,8 +237,8 @@ function RoomDetailBody({
               type="checkbox"
               checked={room.maintenance}
               disabled={role !== 'owner'}
-              onChange={(e) => {
-                const result = actSetMaintenance(
+              onChange={async (e) => {
+                const result = await actSetMaintenance(
                   { store: getStore(), role, now: () => new Date() },
                   { roomId: room.id, maintenance: e.target.checked },
                 );

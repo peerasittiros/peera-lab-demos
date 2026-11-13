@@ -138,8 +138,8 @@ function RoomTypeList({
   const nameOf = (type: Row<'room_type'>) =>
     (locale === 'en' && type.nameEn) || type.nameTh;
 
-  const move = (type: Row<'room_type'>, direction: 'up' | 'down') => {
-    const result = actMoveRoomType(commandContext(role), {
+  const move = async (type: Row<'room_type'>, direction: 'up' | 'down') => {
+    const result = await actMoveRoomType(commandContext(role), {
       roomTypeId: type.id,
       direction,
     });
@@ -156,8 +156,8 @@ function RoomTypeList({
     refocus.current = { direction, id: type.id };
   };
 
-  const remove = (type: Row<'room_type'>) => {
-    const result = actRemoveRoomType(commandContext(role), {
+  const remove = async (type: Row<'room_type'>) => {
+    const result = await actRemoveRoomType(commandContext(role), {
       roomTypeId: type.id,
     });
     toast({
@@ -272,9 +272,9 @@ function RenameForm({
   const [nameTh, setNameTh] = useState(type.nameTh);
   const [nameEn, setNameEn] = useState(type.nameEn ?? '');
 
-  const submit = (event: FormEvent<HTMLFormElement>) => {
+  const submit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
-    const result = actUpdateRoomType(commandContext(role), {
+    const result = await actUpdateRoomType(commandContext(role), {
       roomTypeId: type.id,
       nameTh,
       nameEn: nameEn.trim() === '' ? null : nameEn,

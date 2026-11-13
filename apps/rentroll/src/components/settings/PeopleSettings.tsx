@@ -34,19 +34,19 @@ function Body({ locale }: { locale: Locale }) {
   const [caretaker, setCaretaker] = useState(values.caretakerName ?? '');
   const [tenant, setTenant] = useState(values.tenantName ?? '');
 
-  const save = (key: string, value: string) =>
-    actSaveSetting(commandContext(role), {
+  const save = async (key: string, value: string) =>
+    await actSaveSetting(commandContext(role), {
       key,
       value: value.trim() === '' ? null : value,
     });
 
-  const submit = (event: FormEvent<HTMLFormElement>) => {
+  const submit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
-    const results = [
+    const results = await Promise.all([
       save(SETTING.ownerName, owner),
       save(SETTING.caretakerName, caretaker),
       save(SETTING.tenantName, tenant),
-    ];
+    ]);
     const failed = results.find((result) => !result.ok);
     toast({
       title: failed && !failed.ok ? messageFor(m, failed.error) : s.saved,
